@@ -20,13 +20,18 @@ int main()
 
     Camera cam(Vec3(0.f, 0.f, 0.f));
 
-    Triangle tri(Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 1.f),
-                 Vec3(0.f, 1.f, 1.f));
+    Triangle tri(Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 2.f),
+                 Vec3(0.f, 1.f, 3.f));
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
         float delta_time =
             static_cast<float>(Time::get_ticks_ms() - prev_time) / 1000.f;
+        // fps is capped to 1000 cuz get_ticks_ms doesn't have any higher
+        // accuracy
+        if (delta_time < 0.001f)
+            continue;
+
         prev_time = Time::get_ticks_ms();
 
         printf("delta_time = %f\n", delta_time);

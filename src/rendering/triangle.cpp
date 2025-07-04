@@ -1,10 +1,11 @@
 #include "triangle.hpp"
-#include "../resolution.hpp"
-#include <algorithm>
+#include "../constants.hpp"
+#include "sub_triangle.hpp"
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <tuple>
+#include <cstdio>
 
 namespace {
 
@@ -28,125 +29,155 @@ std::array<Vec3, 3> world_vs_to_camera(const std::array<Vec3, 3> &vs,
     return result;
 }
 
-Vec2 camera_v_to_norm_scr(const Vec3 &v)
+Vec3 line_plane_intersect_point(Vec3 plane_pos, Vec3 plane_normal, Vec3 start,
+                                Vec3 end, float &t)
 {
-    Vec2 w;
-
-    w.x = v.x / v.z;
-    w.y = v.y / v.z;
-
-    return w;
+    // Where a line intersects a plane
+    float plane_d = -plane_normal.dot(plane_pos);
+    float ad = start.dot(plane_normal);
+    float bd = end.dot(plane_normal);
+    t = (-plane_d - ad) / (bd - ad);
+    Vec3 line_start_to_end = end - start;
+    Vec3 line_to_intersect = line_start_to_end * t;
+    return start + line_to_intersect;
 }
 
-// camera space -> normalized screen space
-std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs)
+std::array<Vec3, 3> split_tri_1_in_front(const Vec3 &v_in_front,
+                                         const Vec3 v_behind_0,
+                                         const Vec3 &v_behind_1)
 {
-    std::array<Vec2, 3> result;
+    std::array<Vec3, 3> vs;
 
-    for (size_t i = 0; i < vs.size(); ++i) {
-        result[i] = camera_v_to_norm_scr(vs[i]);
+    float t;
+    Vec3 plane_pos(0.f, 0.f, Consts::z_near);
+    Vec3 plane_norm(0.f, 0.f, 1.f);
+
+    vs[0] = v_in_front;
+    vs[1] = line_plane_intersect_point(plane_pos, plane_norm, v_in_front,
+                                       v_behind_0, t);
+    vs[2] = line_plane_intersect_point(plane_pos, plane_norm, v_in_front,
+                                       v_behind_1, t);
+
+    return vs;
+}
+
+std::array<Vec3, 3> split_tri_2_in_front_0(const Vec3 &v_in_front_0,
+                                           const Vec3 v_in_front_1,
+                                           const Vec3 &v_behind_0)
+{
+    std::array<Vec3, 3> vs;
+
+    float t;
+    Vec3 plane_pos(0.f, 0.f, Consts::z_near);
+    Vec3 plane_norm(0.f, 0.f, 1.f);
+
+    vs[0] = v_in_front_0;
+    vs[1] = v_in_front_1;
+    vs[2] = line_plane_intersect_point(plane_pos, plane_norm, v_in_front_0,
+                                       v_behind_0, t);
+
+    return vs;
+}
+
+std::array<Vec3, 3> split_tri_2_in_front_1(const Vec3 &v_in_front_0,
+                                           const Vec3 v_in_front_1,
+                                           const Vec3 &v_behind_0)
+{
+    std::array<Vec3, 3> vs;
+
+    float t;
+    Vec3 plane_pos(0.f, 0.f, Consts::z_near);
+    Vec3 plane_norm(0.f, 0.f, 1.f);
+
+    vs[0] = v_in_front_1;
+    vs[1] = line_plane_intersect_point(plane_pos, plane_norm, v_in_front_1,
+                                       v_behind_0, t);
+    vs[2] = line_plane_intersect_point(plane_pos, plane_norm, v_in_front_0,
+                                       v_behind_0, t);
+
+    return vs;
+}
+
+std::array<SubTriangle, 2> split_tri_with_near_plane(
+    const std::array<Vec3, 3> &cam_vs, const std::array<size_t, 3> &vs_in_front,
+    unsigned n_in_front, const std::array<size_t, 3> &vs_behind,
+    unsigned n_behind, unsigned &n_sub_tris)
+{
+    assert(n_in_front + n_behind == 3);
+
+    if (n_in_front == 0) {
+        n_sub_tris = 0;
+        return {SubTriangle({}), SubTriangle({})};
+    } else if (n_in_front == 1) {
+        n_sub_tris = 1;
+        return {SubTriangle(split_tri_1_in_front(cam_vs[vs_in_front[0]],
+                                                 cam_vs[vs_behind[0]],
+                                                 cam_vs[vs_behind[1]])),
+                SubTriangle({})};
+    } else if (n_in_front == 2) {
+        n_sub_tris = 2;
+        return {SubTriangle(split_tri_2_in_front_0(cam_vs[vs_in_front[0]],
+                                                   cam_vs[vs_in_front[1]],
+                                                   cam_vs[vs_behind[0]])),
+                SubTriangle(split_tri_2_in_front_1(cam_vs[vs_in_front[0]],
+                                                   cam_vs[vs_in_front[1]],
+                                                   cam_vs[vs_behind[0]]))};
+    } else {
+        n_sub_tris = 1;
+        return {SubTriangle(cam_vs), SubTriangle({})};
+    }
+}
+
+// cam_vs is the camera-space vertices of the triangle to split.
+std::array<SubTriangle, 2>
+split_tri_with_near_plane(const std::array<Vec3, 3> &cam_vs,
+                          unsigned &n_sub_tris)
+{
+    std::array<size_t, 3> vs_in_front;
+    unsigned n_in_front = 0;
+    std::array<size_t, 3> vs_behind;
+    unsigned n_behind = 0;
+
+    for (size_t i = 0; i < cam_vs.size(); i++) {
+        if (cam_vs[i].z < Consts::z_near)
+            vs_behind[n_behind++] = i;
+        else
+            vs_in_front[n_in_front++] = i;
     }
 
-    return result;
-}
-
-Vec2 norm_scr_v_to_scr(const Vec2 &v)
-{
-    Vec2 w;
-
-    w.x = (v.x + 1.f) / 2.f * Res::width;
-    w.y = (-v.y + 1.f) / 2.f * Res::height;
-
-    return w;
-}
-
-// normalized screen space -> screen space
-std::array<Vec2, 3> norm_scr_vs_to_scr(const std::array<Vec2, 3> &vs)
-{
-    std::array<Vec2, 3> result;
-
-    for (std::size_t i = 0; i < vs.size(); i++) {
-        result[i] = norm_scr_v_to_scr(vs[i]);
-    }
-
-    return result;
-}
-
-bool on_screen(uint32_t x, uint32_t y)
-{
-    bool x_in_range = x < Res::width;
-    bool y_in_range = y < Res::height;
-    return x_in_range && y_in_range;
-}
-
-size_t scr_2d_to_1d(size_t x, size_t y)
-{
-    return Res::width * y + x;
-}
-
-// positive if the triangle is counter-clockwise, negative otherwise
-float signed_triangle_area(std::array<Vec2, 3> &vs)
-{
-    return -0.5f * (-vs[1].y * vs[2].x + vs[0].y * (-vs[1].x + vs[2].x) +
-                    vs[0].x * (vs[1].y - vs[2].y) + vs[1].x * vs[2].y);
-}
-
-bool point_inside_triangle(Vec2 &p, std::array<Vec2, 3> &vs)
-{
-    float area = signed_triangle_area(vs);
-
-    // barycentric coordinates are used
-    float s = 1.f / (2.f * -area) *
-              (vs[0].y * vs[2].x - vs[0].x * vs[2].y +
-               (vs[2].y - vs[0].y) * p.x + (vs[0].x - vs[2].x) * p.y);
-    float t = 1.f / (2.f * -area) *
-              (vs[0].x * vs[1].y - vs[0].y * vs[1].x +
-               (vs[1].y - vs[1].y) * p.x + (vs[1].x - vs[0].x) * p.y);
-
-    bool s_in_range = 0.f <= s && s <= 1.f;
-    bool t_in_range = 0.f <= t && t <= 1.f;
-    bool total_in_range = s + t <= 1.f;
-
-    return s_in_range && t_in_range && total_in_range;
+    return split_tri_with_near_plane(cam_vs, vs_in_front, n_in_front, vs_behind,
+                                     n_behind, n_sub_tris);
 }
 
 } // namespace
 
 Triangle::Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2) : vs({v_0, v_1, v_2}) {}
 
-std::array<Vec2, 3> Triangle::project(Camera &cam) const
+std::array<SubTriangle, 2> Triangle::project(Camera &cam,
+                                             unsigned &n_sub_tris) const
 {
     auto cam_vs = world_vs_to_camera(this->vs, cam);
-    auto norm_scr_vs = camera_vs_to_norm_scr(cam_vs);
-    return norm_scr_vs_to_scr(norm_scr_vs);
+
+    auto sub_tris = split_tri_with_near_plane(cam_vs, n_sub_tris);
+    for (unsigned i = 0; i < n_sub_tris; i++) {
+        /*
+        for (size_t j = 0; j < sub_tris[i].vs.size(); j++) {
+            printf("tri[i].vs[j] = {%f, %f, %f}\n", sub_tris[i].vs[j].x,
+                   sub_tris[i].vs[j].y, sub_tris[i].vs[j].z);
+        }*/
+        sub_tris[i].parent = this;
+        sub_tris[i].project_to_scr();
+    }
+
+    return sub_tris;
 }
 
 void Triangle::render(Color *frame, Camera &cam)
 {
-    auto scr_vs = this->project(cam);
+    unsigned n_sub_tris;
+    auto sub_tris = this->project(cam, n_sub_tris);
 
-    // backface culling
-    if (signed_triangle_area(scr_vs) < 0.f)
-        return;
-
-    float x_min, x_max;
-    std::tie(x_min, x_max) =
-        std::minmax({scr_vs[0].x, scr_vs[1].x, scr_vs[2].x});
-
-    float y_min, y_max;
-    std::tie(y_min, y_max) =
-        std::minmax({scr_vs[0].y, scr_vs[1].y, scr_vs[2].y});
-
-    for (int32_t y = std::floor(y_min); y < std::ceil(y_max); ++y) {
-        for (int32_t x = std::floor(x_min); x < std::ceil(x_max); ++x) {
-            if (!on_screen(x, y))
-                continue;
-
-            Vec2 p(x, y);
-            if (!point_inside_triangle(p, scr_vs))
-                continue;
-
-            frame[scr_2d_to_1d(x, y)] = Color(0, 255, 0);
-        }
+    for (unsigned i = 0; i < n_sub_tris; i++) {
+        sub_tris[i].render(frame);
     }
 }

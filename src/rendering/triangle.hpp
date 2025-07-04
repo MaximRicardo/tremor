@@ -2,14 +2,16 @@
 
 #include "../camera.hpp"
 #include "../color.hpp"
-#include "../vector/vec2.hpp"
 #include "../vector/vec3.hpp"
+#include "sub_triangle.hpp"
 #include <array>
 
 class Triangle {
 
-    // returns this->vs in pixel screen space
-    std::array<Vec2, 3> project(Camera &cam) const;
+    // n_triangles              - the number of returned sub triangles.
+    //                            can be either 1 or 2.
+    std::array<SubTriangle, 2> project(Camera &cam,
+                                       unsigned &n_triangles) const;
 
 public:
     std::array<Vec3, 3> vs;
