@@ -25,6 +25,10 @@ size_t scr_2d_to_1d(size_t x, size_t y)
 
 void Triangle::render(Color *frame)
 {
+    // backface culling
+    if (this->signed_area() < 0.f)
+        return;
+
     float x_min, x_max;
     std::tie(x_min, x_max) =
         std::minmax({this->scr_vs[0].x, this->scr_vs[1].x, this->scr_vs[2].x});
