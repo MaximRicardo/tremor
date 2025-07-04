@@ -8,9 +8,16 @@
 
 class Triangle {
 
+public:
+    struct ProjectRet {
+        std::array<SubTriangle, 2> sub_tris;
+        unsigned n_sub_tris;
+    };
+
+private:
     // n_triangles              - the number of returned sub triangles.
     //                            can be set to 0, 1 or 2.
-    std::tuple<std::array<SubTriangle, 2>, unsigned> project(Camera &cam) const;
+    ProjectRet project(Camera &cam) const;
 
 public:
     std::array<Vec3, 3> vs;

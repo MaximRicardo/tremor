@@ -98,9 +98,7 @@ std::tuple<Vec3, float> Plane::line_intersect_point(const Vec3 &start,
     return std::make_tuple(start + line_to_intersect, t);
 }
 
-// there is no fucking way this is the best or even a good way to do this in c++
-std::tuple<std::array<std::array<Vec3, 3>, 2>, unsigned>
-Plane::clip(const std::array<Vec3, 3> &vs) const
+Plane::ClipTriangleRet Plane::clip(const std::array<Vec3, 3> &vs) const
 {
     std::array<size_t, 3> vs_in_front;
     unsigned n_in_front = 0;
@@ -116,8 +114,8 @@ Plane::clip(const std::array<Vec3, 3> &vs) const
             vs_in_front[n_in_front++] = i;
     }
 
-    unsigned n_sub_tris;
-    auto tris = split_tri_with_plane(*this, vs, vs_in_front, n_in_front,
-                                     vs_behind, n_behind, n_sub_tris);
-    return std::make_tuple(tris, n_sub_tris);
+    struct Plane::ClipTriangleRet ret;
+    ret.tris_vs = split_tri_with_plane(*this, vs, vs_in_front, n_in_front,
+                                       vs_behind, n_behind, ret.n_tris);
+    return ret;
 }
