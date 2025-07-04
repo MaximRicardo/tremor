@@ -1,28 +1,43 @@
+#include "camera.hpp"
 #include "color.hpp"
+#include "rendering/triangle.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
-#include "triangle/triangle.hpp"
+#include "time.hpp"
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 
 int main()
 {
+    Time::init();
+
     Screen screen(Res::width, Res::height, Res::upscaled_width,
                   Res::upscaled_height, "Quaken't");
 
     auto frame = std::make_unique<Color[]>(Res::size);
 
+    Camera cam(Vec3(0.f, 0.f, 0.f));
+
     Triangle tri(Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 1.f),
                  Vec3(0.f, 1.f, 1.f));
 
+    uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
+        float delta_time =
+            static_cast<float>(Time::get_ticks_ms() - prev_time) / 1000.f;
+        prev_time = Time::get_ticks_ms();
+
+        printf("delta_time = %f\n", delta_time);
 
         for (std::size_t i = 0; i < Res::size; i++) {
             frame[i] = Color(0, 0, 0);
         }
 
-        tri.render(frame.get());
+        cam.handle_input(delta_time, screen);
+
+        tri.render(frame.get(), cam);
 
         screen.update(frame.get());
     }
