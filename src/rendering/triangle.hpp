@@ -9,9 +9,8 @@
 class Triangle {
 
     // n_triangles              - the number of returned sub triangles.
-    //                            can be either 1 or 2.
-    std::array<SubTriangle, 2> project(Camera &cam,
-                                       unsigned &n_triangles) const;
+    //                            can be set to 0, 1 or 2.
+    std::tuple<std::array<SubTriangle, 2>, unsigned> project(Camera &cam) const;
 
 public:
     std::array<Vec3, 3> vs;

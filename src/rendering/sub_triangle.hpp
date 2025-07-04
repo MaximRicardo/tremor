@@ -17,7 +17,7 @@ public:
 
     const Triangle *parent;
 
-    SubTriangle(std::array<Vec3, 3> vs, const Triangle *parent = nullptr);
+    SubTriangle(std::array<Vec3, 3> vs = {}, const Triangle *parent = nullptr);
 
     std::array<Vec2, 3> get_screen_vs() const;
     void project_to_scr();
