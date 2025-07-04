@@ -16,8 +16,6 @@ int main()
     Triangle tri(Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 1.f),
                  Vec3(0.f, 1.f, 1.f));
 
-    tri.project();
-
     while (!screen.should_close()) {
 
         for (std::size_t i = 0; i < Res::size; i++) {

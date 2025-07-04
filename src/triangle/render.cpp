@@ -25,6 +25,8 @@ size_t scr_2d_to_1d(size_t x, size_t y)
 
 void Triangle::render(Color *frame)
 {
+    this->project();
+
     // backface culling
     if (this->signed_area() < 0.f)
         return;

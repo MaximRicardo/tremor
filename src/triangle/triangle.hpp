@@ -9,6 +9,8 @@ class Triangle {
 
     std::array<Vec2, 3> scr_vs;
 
+    void project();
+
 public:
     std::array<Vec3, 3> vs;
 
@@ -17,6 +19,5 @@ public:
     // positive if the triangle is counter-clockwise, negative otherwise
     float signed_area() const;
     bool point_inside(Vec2 &p) const;
-    void project();
     void render(Color *frame);
 };
