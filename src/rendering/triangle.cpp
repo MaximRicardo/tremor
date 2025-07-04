@@ -84,21 +84,24 @@ size_t scr_2d_to_1d(size_t x, size_t y)
     return Res::width * y + x;
 }
 
-} // namespace
-
-bool Triangle::point_inside(Vec2 &p) const
+// positive if the triangle is counter-clockwise, negative otherwise
+float signed_triangle_area(std::array<Vec2, 3> &vs)
 {
+    return -0.5f * (-vs[1].y * vs[2].x + vs[0].y * (-vs[1].x + vs[2].x) +
+                    vs[0].x * (vs[1].y - vs[2].y) + vs[1].x * vs[2].y);
+}
+
+bool point_inside_triangle(Vec2 &p, std::array<Vec2, 3> &vs)
+{
+    float area = signed_triangle_area(vs);
+
     // barycentric coordinates are used
-    float s = 1.f / (2.f * -this->signed_area()) *
-              (this->scr_vs[0].y * this->scr_vs[2].x -
-               this->scr_vs[0].x * this->scr_vs[2].y +
-               (this->scr_vs[2].y - this->scr_vs[0].y) * p.x +
-               (this->scr_vs[0].x - this->scr_vs[2].x) * p.y);
-    float t = 1.f / (2.f * -this->signed_area()) *
-              (this->scr_vs[0].x * this->scr_vs[1].y -
-               this->scr_vs[0].y * this->scr_vs[1].x +
-               (this->scr_vs[0].y - this->scr_vs[1].y) * p.x +
-               (this->scr_vs[1].x - this->scr_vs[0].x) * p.y);
+    float s = 1.f / (2.f * -area) *
+              (vs[0].y * vs[2].x - vs[0].x * vs[2].y +
+               (vs[2].y - vs[0].y) * p.x + (vs[0].x - vs[2].x) * p.y);
+    float t = 1.f / (2.f * -area) *
+              (vs[0].x * vs[1].y - vs[0].y * vs[1].x +
+               (vs[1].y - vs[1].y) * p.x + (vs[1].x - vs[0].x) * p.y);
 
     bool s_in_range = 0.f <= s && s <= 1.f;
     bool t_in_range = 0.f <= t && t <= 1.f;
@@ -107,39 +110,32 @@ bool Triangle::point_inside(Vec2 &p) const
     return s_in_range && t_in_range && total_in_range;
 }
 
-float Triangle::signed_area() const
-{
-    return -0.5f *
-           (-this->scr_vs[1].y * this->scr_vs[2].x +
-            this->scr_vs[0].y * (-this->scr_vs[1].x + this->scr_vs[2].x) +
-            this->scr_vs[0].x * (this->scr_vs[1].y - this->scr_vs[2].y) +
-            this->scr_vs[1].x * this->scr_vs[2].y);
-}
+} // namespace
 
 Triangle::Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2) : vs({v_0, v_1, v_2}) {}
 
-void Triangle::project(Camera &cam)
+std::array<Vec2, 3> Triangle::project(Camera &cam) const
 {
     auto cam_vs = world_vs_to_camera(this->vs, cam);
     auto norm_scr_vs = camera_vs_to_norm_scr(cam_vs);
-    this->scr_vs = norm_scr_vs_to_scr(norm_scr_vs);
+    return norm_scr_vs_to_scr(norm_scr_vs);
 }
 
 void Triangle::render(Color *frame, Camera &cam)
 {
-    this->project(cam);
+    auto scr_vs = this->project(cam);
 
     // backface culling
-    if (this->signed_area() < 0.f)
+    if (signed_triangle_area(scr_vs) < 0.f)
         return;
 
     float x_min, x_max;
     std::tie(x_min, x_max) =
-        std::minmax({this->scr_vs[0].x, this->scr_vs[1].x, this->scr_vs[2].x});
+        std::minmax({scr_vs[0].x, scr_vs[1].x, scr_vs[2].x});
 
     float y_min, y_max;
     std::tie(y_min, y_max) =
-        std::minmax({this->scr_vs[0].y, this->scr_vs[1].y, this->scr_vs[2].y});
+        std::minmax({scr_vs[0].y, scr_vs[1].y, scr_vs[2].y});
 
     for (int32_t y = std::floor(y_min); y < std::ceil(y_max); ++y) {
         for (int32_t x = std::floor(x_min); x < std::ceil(x_max); ++x) {
@@ -147,7 +143,7 @@ void Triangle::render(Color *frame, Camera &cam)
                 continue;
 
             Vec2 p(x, y);
-            if (!this->point_inside(p))
+            if (!point_inside_triangle(p, scr_vs))
                 continue;
 
             frame[scr_2d_to_1d(x, y)] = Color(0, 255, 0);

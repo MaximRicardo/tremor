@@ -8,17 +8,13 @@
 
 class Triangle {
 
-    std::array<Vec2, 3> scr_vs;
-
-    void project(Camera &cam);
+    // returns this->vs in pixel screen space
+    std::array<Vec2, 3> project(Camera &cam) const;
 
 public:
     std::array<Vec3, 3> vs;
 
     Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2);
 
-    // positive if the triangle is counter-clockwise, negative otherwise
-    float signed_area() const;
-    bool point_inside(Vec2 &p) const;
     void render(Color *frame, Camera &cam);
 };
