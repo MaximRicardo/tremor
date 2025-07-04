@@ -37,6 +37,8 @@ Screen::Screen(std::uint32_t width, std::uint32_t height,
 {
     this->info = new ScreenInfo;
 
+    SetTraceLogLevel(LOG_ERROR);
+
     InitWindow(upscaled_width, upscaled_height, name.c_str());
 
     this->info->width = width;
