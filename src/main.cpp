@@ -21,10 +21,10 @@ int main()
 
     Camera cam(Vec3(0.f, 0.f, 0.f));
 
-    ObjLoader obj("../objs/cube.obj");
-    for (size_t i = 0; i < obj.tris.size(); i++) {
-        obj.tris[i].color = Color(i % 2 == 0 ? 128 : 255, i % 3 == 0 ? 0 : 255,
-                                  i % 4 == 0 ? 0 : 255);
+    auto tris = ObjLoader::load_file("../objs/cube.obj");
+    for (size_t i = 0; i < tris.size(); i++) {
+        tris[i].color = Color(i % 2 == 0 ? 128 : 255, i % 3 == 0 ? 0 : 255,
+                              i % 4 == 0 ? 0 : 255);
     }
 
     uint32_t prev_time = Time::get_ticks_ms();
@@ -46,7 +46,7 @@ int main()
 
         cam.handle_input(delta_time, screen);
 
-        for (auto &tri : obj.tris) {
+        for (auto &tri : tris) {
             tri.render(frame.get(), cam);
         }
 

@@ -45,14 +45,7 @@ std::vector<Triangle> convert_vs_to_tris(const std::vector<Vec3> &vs,
     return tris;
 }
 
-} // namespace
-
-ObjLoader::ObjLoader(std::string f_path) : f_path(f_path)
-{
-    this->load();
-}
-
-void ObjLoader::read_file(std::ifstream &file)
+std::vector<Triangle> read_file(std::ifstream &file)
 {
     std::string line;
 
@@ -80,18 +73,22 @@ void ObjLoader::read_file(std::ifstream &file)
         }
     }
 
-    this->tris = convert_vs_to_tris(vs, idxs);
+    return convert_vs_to_tris(vs, idxs);
 }
 
-void ObjLoader::load()
+} // namespace
+
+std::vector<Triangle> ObjLoader::load_file(std::string file_path)
 {
-    std::ifstream file(this->f_path);
+    std::ifstream file(file_path);
     if (file.fail()) {
-        throw std::runtime_error("can't open obj file " + this->f_path + ": " +
+        throw std::runtime_error("can't open obj file " + file_path + ": " +
                                  strerror(errno));
     }
 
-    this->read_file(file);
+    auto tris = read_file(file);
 
     file.close();
+
+    return tris;
 }

@@ -1,18 +1,11 @@
 #pragma once
 
 #include "../renderer/triangle.hpp"
-#include <fstream>
 #include <string>
 #include <vector>
 
-class ObjLoader {
+namespace ObjLoader {
 
-    void read_file(std::ifstream &file);
-    void load();
+std::vector<Triangle> load_file(std::string file_path);
 
-public:
-    std::vector<Triangle> tris;
-    std::string f_path;
-
-    ObjLoader(std::string f_path);
-};
+}
