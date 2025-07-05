@@ -1,6 +1,6 @@
 #include "camera.hpp"
 #include "color.hpp"
-#include "rendering/triangle.hpp"
+#include "renderer/triangle.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
