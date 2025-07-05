@@ -126,8 +126,30 @@ TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
     return edges;
 }
 
-void render_horizontal_line(int y, int x_0, int x_1, const Color &color,
-                            Color *frame)
+// (u, v, w) are mapped to x, y, z
+// https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+Vec3 get_barycentric_coords(Vec2 p, Vec2 a, Vec2 b, Vec2 c)
+{
+    Vec2 v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = v0.dot(v0);
+    float d01 = v0.dot(v1);
+    float d11 = v1.dot(v1);
+    float d20 = v2.dot(v0);
+    float d21 = v2.dot(v1);
+    float denom = d00 * d11 - d01 * d01;
+
+    Vec3 ret;
+    ret.y = (d11 * d20 - d01 * d21) / denom;
+    ret.z = (d00 * d21 - d01 * d20) / denom;
+    ret.x = 1.f - ret.y - ret.x;
+
+    return ret;
+}
+
+//
+// tri               - the triangle the line belongs to
+void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
+                            const SubTriangle &tri)
 {
     if (y < 0 || y >= static_cast<int>(Res::height))
         return;
@@ -142,7 +164,17 @@ void render_horizontal_line(int y, int x_0, int x_1, const Color &color,
         size_t idx = y * Res::width + x;
         assert(idx < Res::size);
 
-        frame[idx] = color;
+        Vec3 bary_coords = get_barycentric_coords(
+            Vec2(x, y), tri.get_screen_vs()[0], tri.get_screen_vs()[1],
+            tri.get_screen_vs()[2]);
+
+        Vec3 v0_c = Vec3(255.f, 0.f, 0.f);
+        Vec3 v1_c = Vec3(0.f, 255.f, 0.f);
+        Vec3 v2_c = Vec3(0.f, 0.f, 255.f);
+        Vec3 p_c =
+            v0_c * bary_coords.x + v1_c * bary_coords.y + v2_c * bary_coords.z;
+
+        frame[idx] = Color(p_c.x, p_c.y, p_c.z);
     }
 }
 
@@ -169,7 +201,6 @@ void SubTriangle::render(Color *frame)
 
     for (size_t i = 0; i < edges.n_edges; i++) {
         int y = i + edges.y_offset;
-        render_horizontal_line(y, edges.starts[i], edges.ends[i],
-                               this->parent->color, frame);
+        render_horizontal_line(y, edges.starts[i], edges.ends[i], frame, *this);
     }
 }
