@@ -24,6 +24,18 @@ int key_enum_to_raylib(Input::Key key)
 
     case Input::Key::SPACE:
         return KEY_SPACE;
+
+    case Input::Key::Q:
+        return KEY_Q;
+
+    case Input::Key::E:
+        return KEY_E;
+
+    case Input::Key::LEFT:
+        return KEY_LEFT;
+
+    case Input::Key::RIGHT:
+        return KEY_RIGHT;
     }
 }
 

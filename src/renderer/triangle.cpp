@@ -10,16 +10,17 @@
 
 namespace {
 
-Vec3 world_v_to_camera(const Vec3 &v, Camera &cam)
+// only accounts for y rotation rn
+Vec3 world_v_to_camera(const Vec3 &v, const Camera &cam)
 {
-    Vec3 w = v - cam.pos;
+    Vec3 w = (v - cam.pos).rotate_about_y(cam.rot.y);
 
     return w;
 }
 
 // world space -> camera space
 std::array<Vec3, 3> world_vs_to_camera(const std::array<Vec3, 3> &vs,
-                                       Camera &cam)
+                                       const Camera &cam)
 {
     std::array<Vec3, 3> result;
 
@@ -53,16 +54,18 @@ split_tri_with_near_plane(const Triangle &tri,
 
 } // namespace
 
-Triangle::Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2) : vs({v_0, v_1, v_2}) {}
+Triangle::Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2, Color color)
+    : vs({v_0, v_1, v_2}), color(color)
+{}
 
-Triangle::ProjectRet Triangle::project(Camera &cam) const
+Triangle::ProjectRet Triangle::project(const Camera &cam) const
 {
     auto cam_vs = world_vs_to_camera(this->vs, cam);
 
     return split_tri_with_near_plane(*this, cam_vs);
 }
 
-void Triangle::render(Color *frame, Camera &cam)
+void Triangle::render(Color *frame, const Camera &cam)
 {
     Triangle::ProjectRet project_ret;
     project_ret = this->project(cam);

@@ -1,11 +1,14 @@
 #include "sub_triangle.hpp"
 #include "../resolution.hpp"
+#include "triangle.hpp"
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <tuple>
+#include <limits>
+#include <memory>
 
 namespace {
 
@@ -31,9 +34,9 @@ std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs)
     return result;
 }
 
-Vec2 norm_scr_v_to_scr(const Vec2 &v)
+Vec2i norm_scr_v_to_scr(const Vec2 &v)
 {
-    Vec2 w;
+    Vec2i w;
 
     w.x = (v.x + 1.f) / 2.f * Res::width;
     w.y = (-v.y + 1.f) / 2.f * Res::height;
@@ -42,9 +45,9 @@ Vec2 norm_scr_v_to_scr(const Vec2 &v)
 }
 
 // normalized screen space -> screen space
-std::array<Vec2, 3> norm_scr_vs_to_scr(const std::array<Vec2, 3> &vs)
+std::array<Vec2i, 3> norm_scr_vs_to_scr(const std::array<Vec2, 3> &vs)
 {
-    std::array<Vec2, 3> result;
+    std::array<Vec2i, 3> result;
 
     for (std::size_t i = 0; i < vs.size(); i++) {
         result[i] = norm_scr_v_to_scr(vs[i]);
@@ -53,16 +56,94 @@ std::array<Vec2, 3> norm_scr_vs_to_scr(const std::array<Vec2, 3> &vs)
     return result;
 }
 
-bool on_screen(uint32_t x, uint32_t y)
+struct TriangleEdgeList {
+
+    // a list of lines from one edge of the triangle to another.
+    // each element in starts and ends represents one scanline of the triangle,
+    // starting from the top and ending at the bottom.
+    std::unique_ptr<int[]> starts;
+    std::unique_ptr<int[]> ends;
+    size_t n_edges;
+    // how much to add to the index of a scanline to get its y coordinate in
+    // screen-space.
+    int y_offset;
+};
+
+void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
+                                struct TriangleEdgeList &edges)
 {
-    bool x_in_range = x < Res::width;
-    bool y_in_range = y < Res::height;
-    return x_in_range && y_in_range;
+    // bresenham line algorithm from https://gist.github.com/bert/1085538
+
+    int dx = abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
+    int dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
+    int err = dx + dy, e2; /* error value e_xy */
+
+    for (;;) { /* loop */
+
+        size_t idx = start.y - edges.y_offset;
+        assert(idx < edges.n_edges);
+
+        if (start.x < edges.starts[idx])
+            edges.starts[idx] = start.x;
+        if (start.x > edges.ends[idx])
+            edges.ends[idx] = start.x;
+
+        if (start.x == end.x && start.y == end.y)
+            break;
+        e2 = 2 * err;
+        if (e2 >= dy) {
+            err += dy;
+            start.x += sx;
+        } /* e_xy+e_x > 0 */
+        if (e2 <= dx) {
+            err += dx;
+            start.y += sy;
+        } /* e_xy+e_y < 0 */
+    }
 }
 
-size_t scr_2d_to_1d(size_t x, size_t y)
+TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
 {
-    return Res::width * y + x;
+    TriangleEdgeList edges;
+
+    int y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
+    int y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
+
+    edges.y_offset = y_min;
+    edges.n_edges = y_max - y_min + 1;
+    edges.starts = std::make_unique<int[]>(edges.n_edges);
+    edges.ends = std::make_unique<int[]>(edges.n_edges);
+
+    for (size_t i = 0; i < edges.n_edges; ++i) {
+        edges.starts[i] = std::numeric_limits<int>::max();
+        edges.ends[i] = std::numeric_limits<int>::lowest();
+    }
+
+    set_tri_edge_list_via_line(vs[0], vs[1], edges);
+    set_tri_edge_list_via_line(vs[1], vs[2], edges);
+    set_tri_edge_list_via_line(vs[2], vs[0], edges);
+
+    return edges;
+}
+
+void render_horizontal_line(int y, int x_0, int x_1, const Color &color,
+                            Color *frame)
+{
+    if (y < 0 || y >= static_cast<int>(Res::height))
+        return;
+
+    if (x_0 >= static_cast<int>(Res::width) || x_1 < 0)
+        return;
+
+    x_0 = std::max(x_0, 0);
+    x_1 = std::min(x_1, static_cast<int>(Res::width - 1));
+
+    for (int x = x_0; x <= x_1; ++x) {
+        size_t idx = y * Res::width + x;
+        assert(idx < Res::size);
+
+        frame[idx] = color;
+    }
 }
 
 } // namespace
@@ -71,7 +152,7 @@ SubTriangle::SubTriangle(std::array<Vec3, 3> vs, const Triangle *parent)
     : vs(vs), parent(parent)
 {}
 
-std::array<Vec2, 3> SubTriangle::get_screen_vs() const
+std::array<Vec2i, 3> SubTriangle::get_screen_vs() const
 {
     return this->screen_vs;
 }
@@ -82,66 +163,13 @@ void SubTriangle::project_to_scr()
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 
-// positive if the triangle is counter-clockwise, negative otherwise
-float SubTriangle::signed_area() const
-{
-    return -0.5f * (-this->screen_vs[1].y * this->screen_vs[2].x +
-                    this->screen_vs[0].y *
-                        (-this->screen_vs[1].x + this->screen_vs[2].x) +
-                    this->screen_vs[0].x *
-                        (this->screen_vs[1].y - this->screen_vs[2].y) +
-                    this->screen_vs[1].x * this->screen_vs[2].y);
-}
-
-bool SubTriangle::point_inside(Vec2 &p) const
-{
-    // barycentric coordinates are used
-    float s = 1.f / (2.f * -this->signed_area()) *
-              (this->screen_vs[0].y * this->screen_vs[2].x -
-               this->screen_vs[0].x * this->screen_vs[2].y +
-               (this->screen_vs[2].y - this->screen_vs[0].y) * p.x +
-               (this->screen_vs[0].x - this->screen_vs[2].x) * p.y);
-    float t = 1.f / (2.f * -this->signed_area()) *
-              (this->screen_vs[0].x * this->screen_vs[1].y -
-               this->screen_vs[0].y * this->screen_vs[1].x +
-               (this->screen_vs[0].y - this->screen_vs[1].y) * p.x +
-               (this->screen_vs[1].x - this->screen_vs[0].x) * p.y);
-
-    bool s_in_range = 0.f <= s && s <= 1.f;
-    bool t_in_range = 0.f <= t && t <= 1.f;
-    bool total_in_range = s + t <= 1.f;
-
-    return s_in_range && t_in_range && total_in_range;
-}
-
 void SubTriangle::render(Color *frame)
 {
-    float x_min, x_max;
-    std::tie(x_min, x_max) = std::minmax(
-        {this->screen_vs[0].x, this->screen_vs[1].x, this->screen_vs[2].x});
+    TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
 
-    float y_min, y_max;
-    std::tie(y_min, y_max) = std::minmax(
-        {this->screen_vs[0].y, this->screen_vs[1].y, this->screen_vs[2].y});
-
-    if (x_max < 0 || x_min >= Res::width)
-        return;
-    if (y_max < 0 || y_min >= Res::height)
-        return;
-
-    x_min = std::max(x_min, 0.f);
-    x_max = std::min(x_max, static_cast<float>(Res::width - 1));
-
-    for (int32_t y = std::floor(y_min); y < std::ceil(y_max); ++y) {
-        for (int32_t x = std::floor(x_min); x < std::ceil(x_max); ++x) {
-            if (!on_screen(x, y))
-                continue;
-
-            Vec2 p(x, y);
-            if (!this->point_inside(p))
-                continue;
-
-            frame[scr_2d_to_1d(x, y)] = Color(0, 255, 0);
-        }
+    for (size_t i = 0; i < edges.n_edges; i++) {
+        int y = i + edges.y_offset;
+        render_horizontal_line(y, edges.starts[i], edges.ends[i],
+                               this->parent->color, frame);
     }
 }

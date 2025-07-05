@@ -1,6 +1,7 @@
 #include "vec2.hpp"
 
 Vec2::Vec2(float x, float y) : x(x), y(y) {}
+Vec2::Vec2(const Vec2i &v) : x(v.x), y(v.y) {}
 
 Vec2 Vec2::operator+(const Vec2 &v) const
 {
@@ -49,4 +50,51 @@ Vec2 Vec2::operator/=(float x)
 float Vec2::dot(const Vec2 &v) const
 {
     return this->x * v.x + this->y * v.y;
+}
+
+Vec2i::Vec2i(int x, int y) : x(x), y(y) {}
+Vec2i::Vec2i(const Vec2 &v) : x(v.x), y(v.y) {}
+
+Vec2i Vec2i::operator+(const Vec2i &v) const
+{
+    return {this->x + v.x, this->y + v.y};
+}
+
+Vec2i Vec2i::operator+=(const Vec2i &v)
+{
+    *this = *this + v;
+    return *this;
+}
+
+Vec2i Vec2i::operator-(const Vec2i &v) const
+{
+    return {this->x - v.x, this->y - v.y};
+}
+
+Vec2i Vec2i::operator-=(const Vec2i &v)
+{
+    *this = *this - v;
+    return *this;
+}
+
+Vec2i Vec2i::operator*(int x) const
+{
+    return {this->x * x, this->y * y};
+}
+
+Vec2i Vec2i::operator*=(int x)
+{
+    *this = *this * x;
+    return *this;
+}
+
+Vec2i Vec2i::operator/(int x) const
+{
+    return {this->x / x, this->y / y};
+}
+
+Vec2i Vec2i::operator/=(int x)
+{
+    *this = *this / x;
+    return *this;
 }

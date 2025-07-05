@@ -9,7 +9,7 @@ class Triangle;
 
 class SubTriangle {
 
-    std::array<Vec2, 3> screen_vs;
+    std::array<Vec2i, 3> screen_vs;
 
 public:
     // IN CAMERA SPACE
@@ -19,9 +19,7 @@ public:
 
     SubTriangle(std::array<Vec3, 3> vs = {}, const Triangle *parent = nullptr);
 
-    std::array<Vec2, 3> get_screen_vs() const;
+    std::array<Vec2i, 3> get_screen_vs() const;
     void project_to_scr();
     void render(Color *frame);
-    bool point_inside(Vec2 &p) const;
-    float signed_area() const;
 };

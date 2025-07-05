@@ -1,5 +1,6 @@
 #include "camera.hpp"
 #include "color.hpp"
+#include "obj_loader/obj_loader.hpp"
 #include "renderer/triangle.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
@@ -20,8 +21,11 @@ int main()
 
     Camera cam(Vec3(0.f, 0.f, 0.f));
 
-    Triangle tri(Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 2.f),
-                 Vec3(0.f, 1.f, 3.f));
+    ObjLoader obj("../objs/cube.obj");
+    for (size_t i = 0; i < obj.tris.size(); i++) {
+        obj.tris[i].color = Color(i % 2 == 0 ? 128 : 255, i % 3 == 0 ? 0 : 255,
+                                  i % 4 == 0 ? 0 : 255);
+    }
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
@@ -42,7 +46,9 @@ int main()
 
         cam.handle_input(delta_time, screen);
 
-        tri.render(frame.get(), cam);
+        for (auto &tri : obj.tris) {
+            tri.render(frame.get(), cam);
+        }
 
         screen.update(frame.get());
     }
