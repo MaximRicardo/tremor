@@ -1,5 +1,7 @@
 #include "sub_triangle.hpp"
+#include "../index.hpp"
 #include "../resolution.hpp"
+#include "../texture.hpp"
 #include "triangle.hpp"
 #include <algorithm>
 #include <array>
@@ -109,6 +111,18 @@ TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
     int y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
     int y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
 
+    // this optimization crashes the renderer so i'ma just keep this here til
+    // i get around to figuring out why.
+    /*
+    if (y_max < 0 || y_min >= static_cast<int>(Res::height)) {
+        edges.n_edges = 0;
+        return edges;
+    }
+
+    y_min = std::max(y_min, 0);
+    y_max = std::min(y_max, static_cast<int>(Res::height - 1));
+    */
+
     edges.y_offset = y_min;
     edges.n_edges = y_max - y_min + 1;
     edges.starts = std::make_unique<int[]>(edges.n_edges);
@@ -141,15 +155,41 @@ Vec3 get_barycentric_coords(Vec2 p, Vec2 a, Vec2 b, Vec2 c)
     Vec3 ret;
     ret.y = (d11 * d20 - d01 * d21) / denom;
     ret.z = (d00 * d21 - d01 * d20) / denom;
-    ret.x = 1.f - ret.y - ret.x;
+    ret.x = 1.f - ret.y - ret.z;
 
     return ret;
+}
+
+float interpolate_z(const SubTriangle &tri, const Vec3 &bary_coords)
+{
+    float z = 1.f / (1.f / tri.vs[0].z * bary_coords.x +
+                     1.f / tri.vs[1].z * bary_coords.y +
+                     1.f / tri.vs[2].z * bary_coords.z);
+    return z;
+}
+
+Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
+                     const Texture &tex)
+{
+    Vec2 p_tex_coord = (tri.vts[0] / tri.vs[0].z * bary_coords.x +
+                        tri.vts[1] / tri.vs[1].z * bary_coords.y +
+                        tri.vts[2] / tri.vs[2].z * bary_coords.z) *
+                       z;
+
+    Vec2i tx = Vec2i(p_tex_coord.x * tex.get_width(),
+                     p_tex_coord.y * tex.get_height());
+
+    tx.x = std::max(0, std::min(static_cast<int>(tex.get_width() - 1), tx.x));
+    tx.y = std::max(0, std::min(static_cast<int>(tex.get_height() - 1), tx.y));
+
+    return tx;
 }
 
 //
 // tri               - the triangle the line belongs to
 void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
-                            const SubTriangle &tri)
+                            float *depth_buffer, const SubTriangle &tri,
+                            const Texture *texs)
 {
     if (y < 0 || y >= static_cast<int>(Res::height))
         return;
@@ -161,27 +201,30 @@ void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
     x_1 = std::min(x_1, static_cast<int>(Res::width - 1));
 
     for (int x = x_0; x <= x_1; ++x) {
-        size_t idx = y * Res::width + x;
+        size_t idx = Index::conv_2d_to_1d(Vec2i(x, y), Res::width);
         assert(idx < Res::size);
 
         Vec3 bary_coords = get_barycentric_coords(
             Vec2(x, y), tri.get_screen_vs()[0], tri.get_screen_vs()[1],
             tri.get_screen_vs()[2]);
 
-        Vec3 v0_c = Vec3(255.f, 0.f, 0.f);
-        Vec3 v1_c = Vec3(0.f, 255.f, 0.f);
-        Vec3 v2_c = Vec3(0.f, 0.f, 255.f);
-        Vec3 p_c =
-            v0_c * bary_coords.x + v1_c * bary_coords.y + v2_c * bary_coords.z;
+        float z = interpolate_z(tri, bary_coords);
+        if (depth_buffer[idx] <= z)
+            continue;
+        depth_buffer[idx] = z;
 
-        frame[idx] = Color(p_c.x, p_c.y, p_c.z);
+        auto texel_coord = get_tex_coords(tri, bary_coords, z, texs[0]);
+        size_t texel = Index::conv_2d_to_1d(texel_coord, texs[0].get_width());
+
+        frame[idx] = texs[0].get_pixels()[texel];
     }
 }
 
 } // namespace
 
-SubTriangle::SubTriangle(std::array<Vec3, 3> vs, const Triangle *parent)
-    : vs(vs), parent(parent)
+SubTriangle::SubTriangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
+                         const Triangle *parent)
+    : vs(vs), vts(vts), parent(parent)
 {}
 
 std::array<Vec2i, 3> SubTriangle::get_screen_vs() const
@@ -195,12 +238,13 @@ void SubTriangle::project_to_scr()
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 
-void SubTriangle::render(Color *frame)
+void SubTriangle::render(Color *frame, float *depth_buffer, const Texture *texs)
 {
     TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
 
     for (size_t i = 0; i < edges.n_edges; i++) {
         int y = i + edges.y_offset;
-        render_horizontal_line(y, edges.starts[i], edges.ends[i], frame, *this);
+        render_horizontal_line(y, edges.starts[i], edges.ends[i], frame,
+                               depth_buffer, *this, texs);
     }
 }

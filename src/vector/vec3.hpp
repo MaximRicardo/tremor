@@ -19,4 +19,6 @@ public:
     float dot(const Vec3 &v) const;
     Vec3 cross(const Vec3 &v) const;
     Vec3 rotate_about_y(float radians) const;
+    Vec3 mix(const Vec3 &v, float t) const;
+    float dist(const Vec3 &v) const;
 };

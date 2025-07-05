@@ -66,3 +66,14 @@ Vec3 Vec3::rotate_about_y(float radians) const
     w.z = this->x * std::sin(radians) + this->z * std::cos(radians);
     return w;
 }
+
+Vec3 Vec3::mix(const Vec3 &v, float t) const
+{
+    return *this + (v - *this) * t;
+}
+
+float Vec3::dist(const Vec3 &v) const
+{
+    Vec3 diff = v - *this;
+    return diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+}

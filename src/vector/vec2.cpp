@@ -52,6 +52,11 @@ float Vec2::dot(const Vec2 &v) const
     return this->x * v.x + this->y * v.y;
 }
 
+Vec2 Vec2::mix(const Vec2 &v, float t) const
+{
+    return *this + (v - *this) * t;
+}
+
 Vec2i::Vec2i(int x, int y) : x(x), y(y) {}
 Vec2i::Vec2i(const Vec2 &v) : x(v.x), y(v.y) {}
 

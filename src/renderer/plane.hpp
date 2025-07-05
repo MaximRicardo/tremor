@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../vector/vec3.hpp"
+#include "triangle.hpp"
 #include <array>
 #include <tuple>
 
@@ -17,10 +18,10 @@ public:
                                                  const Vec3 &end) const;
 
     struct ClipTriangleRet {
-        std::array<std::array<Vec3, 3>, 2> tris_vs;
+        std::array<Triangle, 2> tris;
         unsigned n_tris;
     };
 
     // returns the part of the triangle vs that is in front of this.
-    ClipTriangleRet clip(const std::array<Vec3, 3> &vs) const;
+    ClipTriangleRet clip(const Triangle &tri) const;
 };

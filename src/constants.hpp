@@ -2,6 +2,6 @@
 
 namespace Consts {
 
-constexpr float z_near = 0.01f;
+constexpr float z_near = 0.1f;
 
 }

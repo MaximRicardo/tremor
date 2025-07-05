@@ -1,4 +1,5 @@
 #include "plane.hpp"
+#include "triangle.hpp"
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -8,56 +9,82 @@ Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
 
 namespace {
 
-std::array<Vec3, 3> split_tri_1_in_front(const Plane &plane,
-                                         const Vec3 &v_in_front,
-                                         const Vec3 &v_behind_0,
-                                         const Vec3 &v_behind_1)
+// if only one vertex of the original triangle is in front of the splitting
+// plane, one new triangle needs to be made. this function creates that
+// triangle.
+Triangle split_tri_1_in_front(const Plane &plane, const Triangle &tri,
+                              size_t v_in_front, size_t v_behind_0,
+                              size_t v_behind_1)
 {
-    std::array<Vec3, 3> vs;
+    Triangle sub_tri;
 
     float t;
 
-    vs[0] = v_in_front;
-    std::tie(vs[1], t) = plane.line_intersect_point(v_in_front, v_behind_0);
-    std::tie(vs[2], t) = plane.line_intersect_point(v_in_front, v_behind_1);
+    sub_tri.vs[0] = tri.vs[v_in_front];
+    sub_tri.vts[0] = tri.vts[v_in_front];
 
-    return vs;
+    std::tie(sub_tri.vs[1], t) =
+        plane.line_intersect_point(tri.vs[v_in_front], tri.vs[v_behind_0]);
+    sub_tri.vts[1] = tri.vts[v_in_front].mix(tri.vts[v_behind_0], t);
+
+    std::tie(sub_tri.vs[2], t) =
+        plane.line_intersect_point(tri.vs[v_in_front], tri.vs[v_behind_1]);
+    sub_tri.vts[2] = tri.vts[v_in_front].mix(tri.vts[v_behind_1], t);
+
+    return sub_tri;
 }
 
-std::array<Vec3, 3> split_tri_2_in_front_0(const Plane &plane,
-                                           const Vec3 &v_in_front_0,
-                                           const Vec3 &v_in_front_1,
-                                           const Vec3 &v_behind_0)
+// if two vertices of the original triangle are in front of the splitting
+// plane, two new triangles need to be made. this function creates the first
+// triangle.
+Triangle split_tri_2_in_front_0(const Plane &plane, const Triangle &tri,
+                                size_t v_in_front_0, size_t v_in_front_1,
+                                size_t v_behind)
 {
-    std::array<Vec3, 3> vs;
+    Triangle sub_tri;
 
     float t;
 
-    vs[0] = v_in_front_0;
-    vs[1] = v_in_front_1;
-    std::tie(vs[2], t) = plane.line_intersect_point(v_in_front_0, v_behind_0);
+    sub_tri.vs[0] = tri.vs[v_in_front_0];
+    sub_tri.vts[0] = tri.vts[v_in_front_0];
 
-    return vs;
+    sub_tri.vs[1] = tri.vs[v_in_front_1];
+    sub_tri.vts[1] = tri.vts[v_in_front_1];
+
+    std::tie(sub_tri.vs[2], t) =
+        plane.line_intersect_point(tri.vs[v_in_front_0], tri.vs[v_behind]);
+    sub_tri.vts[2] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
+
+    return sub_tri;
 }
 
-std::array<Vec3, 3> split_tri_2_in_front_1(const Plane &plane,
-                                           const Vec3 &v_in_front_0,
-                                           const Vec3 &v_in_front_1,
-                                           const Vec3 &v_behind_0)
+// if two vertices of the original triangle are in front of the splitting
+// plane, two new triangles need to be made. this function creates the second
+// triangle.
+Triangle split_tri_2_in_front_1(const Plane &plane, const Triangle &tri,
+                                size_t v_in_front_0, size_t v_in_front_1,
+                                size_t v_behind)
 {
-    std::array<Vec3, 3> vs;
+    Triangle sub_tri;
 
     float t;
 
-    vs[0] = v_in_front_1;
-    std::tie(vs[1], t) = plane.line_intersect_point(v_in_front_1, v_behind_0);
-    std::tie(vs[2], t) = plane.line_intersect_point(v_in_front_0, v_behind_0);
+    sub_tri.vs[0] = tri.vs[v_in_front_1];
+    sub_tri.vts[0] = tri.vts[v_in_front_1];
 
-    return vs;
+    std::tie(sub_tri.vs[1], t) =
+        plane.line_intersect_point(tri.vs[v_in_front_1], tri.vs[v_behind]);
+    sub_tri.vts[1] = tri.vts[v_in_front_1].mix(tri.vts[v_behind], t);
+
+    std::tie(sub_tri.vs[2], t) =
+        plane.line_intersect_point(tri.vs[v_in_front_0], tri.vs[v_behind]);
+    sub_tri.vts[2] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
+
+    return sub_tri;
 }
 
-std::array<std::array<Vec3, 3>, 2>
-split_tri_with_plane(const Plane &plane, const std::array<Vec3, 3> &vs,
+std::array<Triangle, 2>
+split_tri_with_plane(const Plane &plane, const Triangle &tri,
                      const std::array<size_t, 3> &vs_in_front,
                      unsigned n_in_front,
                      const std::array<size_t, 3> &vs_behind, unsigned n_behind,
@@ -70,17 +97,17 @@ split_tri_with_plane(const Plane &plane, const std::array<Vec3, 3> &vs,
         return {};
     } else if (n_in_front == 1) {
         n_sub_tris = 1;
-        return {split_tri_1_in_front(plane, vs[vs_in_front[0]],
-                                     vs[vs_behind[0]], vs[vs_behind[1]])};
+        return {split_tri_1_in_front(plane, tri, vs_in_front[0], vs_behind[0],
+                                     vs_behind[1])};
     } else if (n_in_front == 2) {
         n_sub_tris = 2;
-        return {split_tri_2_in_front_0(plane, vs[vs_in_front[0]],
-                                       vs[vs_in_front[1]], vs[vs_behind[0]]),
-                split_tri_2_in_front_1(plane, vs[vs_in_front[0]],
-                                       vs[vs_in_front[1]], vs[vs_behind[0]])};
+        return {split_tri_2_in_front_0(plane, tri, vs_in_front[0],
+                                       vs_in_front[1], vs_behind[0]),
+                split_tri_2_in_front_1(plane, tri, vs_in_front[0],
+                                       vs_in_front[1], vs_behind[0])};
     } else {
         n_sub_tris = 1;
-        return {vs};
+        return {tri};
     }
 }
 
@@ -89,7 +116,6 @@ split_tri_with_plane(const Plane &plane, const std::array<Vec3, 3> &vs,
 std::tuple<Vec3, float> Plane::line_intersect_point(const Vec3 &start,
                                                     const Vec3 &end) const
 {
-    // Where a line intersects a plane
     float ad = start.dot(this->normal);
     float bd = end.dot(this->normal);
     float t = (this->d - ad) / (bd - ad);
@@ -98,15 +124,15 @@ std::tuple<Vec3, float> Plane::line_intersect_point(const Vec3 &start,
     return std::make_tuple(start + line_to_intersect, t);
 }
 
-Plane::ClipTriangleRet Plane::clip(const std::array<Vec3, 3> &vs) const
+Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
 {
     std::array<size_t, 3> vs_in_front;
     unsigned n_in_front = 0;
     std::array<size_t, 3> vs_behind;
     unsigned n_behind = 0;
 
-    for (size_t i = 0; i < vs.size(); i++) {
-        float v_d = normal.dot(vs[i]);
+    for (size_t i = 0; i < tri.vs.size(); i++) {
+        float v_d = normal.dot(tri.vs[i]);
 
         if (v_d < this->d)
             vs_behind[n_behind++] = i;
@@ -115,7 +141,8 @@ Plane::ClipTriangleRet Plane::clip(const std::array<Vec3, 3> &vs) const
     }
 
     struct Plane::ClipTriangleRet ret;
-    ret.tris_vs = split_tri_with_plane(*this, vs, vs_in_front, n_in_front,
-                                       vs_behind, n_behind, ret.n_tris);
+    ret.tris = split_tri_with_plane(*this, tri, vs_in_front, n_in_front,
+                                    vs_behind, n_behind, ret.n_tris);
+
     return ret;
 }

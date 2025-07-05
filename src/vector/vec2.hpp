@@ -20,6 +20,7 @@ public:
     Vec2 operator/=(float x);
 
     float dot(const Vec2 &v) const;
+    Vec2 mix(const Vec2 &v, float t) const;
 };
 
 class Vec2i {

@@ -40,12 +40,15 @@ split_tri_with_near_plane(const Triangle &tri,
 
     Plane near_plane(Vec3(0.f, 0.f, 1.f), Consts::z_near);
 
+    Triangle cam_space_tri(cam_vs, tri.vts);
+
     Plane::ClipTriangleRet clip_ret;
-    clip_ret = near_plane.clip(cam_vs);
+    clip_ret = near_plane.clip(cam_space_tri);
 
     ret.n_sub_tris = clip_ret.n_tris;
     for (unsigned i = 0; i < clip_ret.n_tris; i++) {
-        ret.sub_tris[i] = SubTriangle(clip_ret.tris_vs[i], &tri);
+        ret.sub_tris[i] =
+            SubTriangle(clip_ret.tris[i].vs, clip_ret.tris[i].vts, &tri);
         ret.sub_tris[i].project_to_scr();
     }
 
@@ -54,8 +57,8 @@ split_tri_with_near_plane(const Triangle &tri,
 
 } // namespace
 
-Triangle::Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2, Color color)
-    : vs({v_0, v_1, v_2}), color(color)
+Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts)
+    : vs(vs), vts(vts)
 {}
 
 Triangle::ProjectRet Triangle::project(const Camera &cam) const
@@ -65,12 +68,13 @@ Triangle::ProjectRet Triangle::project(const Camera &cam) const
     return split_tri_with_near_plane(*this, cam_vs);
 }
 
-void Triangle::render(Color *frame, const Camera &cam)
+void Triangle::render(Color *frame, float *depth_buffer, const Camera &cam,
+                      const Texture *texs)
 {
     Triangle::ProjectRet project_ret;
     project_ret = this->project(cam);
 
     for (unsigned i = 0; i < project_ret.n_sub_tris; i++) {
-        project_ret.sub_tris[i].render(frame);
+        project_ret.sub_tris[i].render(frame, depth_buffer, texs);
     }
 }

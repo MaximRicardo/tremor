@@ -2,6 +2,7 @@
 
 #include "../camera.hpp"
 #include "../color.hpp"
+#include "../texture.hpp"
 #include "../vector/vec3.hpp"
 #include "sub_triangle.hpp"
 #include <array>
@@ -20,10 +21,13 @@ private:
     ProjectRet project(const Camera &cam) const;
 
 public:
+    // vertices
     std::array<Vec3, 3> vs;
-    Color color;
+    // vertex texture coords
+    std::array<Vec2, 3> vts;
 
-    Triangle(Vec3 v_0, Vec3 v_1, Vec3 v_2, Color color = Color(0, 0, 0, 255));
+    Triangle(std::array<Vec3, 3> vs = {}, std::array<Vec2, 3> vts = {});
 
-    void render(Color *frame, const Camera &cam);
+    void render(Color *frame, float *depth_buffer, const Camera &cam,
+                const Texture *texs);
 };
