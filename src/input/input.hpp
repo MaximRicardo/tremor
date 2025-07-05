@@ -11,6 +11,8 @@ enum class Key {
     S,
     D,
     SPACE,
+    LEFT,
+    RIGHT,
 
 };
 
