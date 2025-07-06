@@ -18,7 +18,7 @@ public:
                                                  const Vec3 &end) const;
 
     struct ClipTriangleRet {
-        std::array<Triangle, 2> tris;
+        std::array<Triangle, 2> tris = {Triangle({}, {}), Triangle({}, {})};
         unsigned n_tris;
     };
 
