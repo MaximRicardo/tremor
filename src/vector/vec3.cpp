@@ -47,6 +47,11 @@ Vec3 Vec3::operator/=(float x)
     return *this;
 }
 
+Vec3 Vec3::operator-() const
+{
+    return {-this->x, -this->y, -this->z};
+}
+
 float Vec3::dot(const Vec3 &v) const
 {
     return this->x * v.x + this->y * v.y + this->z * v.z;
@@ -76,4 +81,14 @@ float Vec3::dist(const Vec3 &v) const
 {
     Vec3 diff = v - *this;
     return diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+}
+
+float Vec3::length() const
+{
+    return std::sqrt(this->dot(*this));
+}
+
+Vec3 Vec3::normalize() const
+{
+    return *this / this->length();
 }

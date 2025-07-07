@@ -3,11 +3,27 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <tuple>
 
 Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
 
 namespace {
+
+// matches the winding order of tri to that of other
+// this is needed cuz for some strange reason that i can't figure out, when
+// splitting a triangle the winding order sometimes changes and sometimes
+// doesn't. my computer has something against me i swear
+void match_winding_order(Triangle &tri, const Triangle &other)
+{
+    Plane tri_plane = tri.get_plane();
+    Plane other_plane = other.get_plane();
+
+    if (other_plane.normal.dot(tri_plane.normal) < 0.f) {
+        std::swap(tri.vs[1], tri.vs[2]);
+        std::swap(tri.vts[1], tri.vts[2]);
+    }
+}
 
 // if only one vertex of the original triangle is in front of the splitting
 // plane, one new triangle needs to be made. this function creates that
@@ -31,6 +47,8 @@ Triangle split_tri_1_in_front(const Plane &plane, const Triangle &tri,
         plane.line_intersect_point(tri.vs[v_in_front], tri.vs[v_behind_1]);
     sub_tri.vts[2] = tri.vts[v_in_front].mix(tri.vts[v_behind_1], t);
 
+    match_winding_order(sub_tri, tri);
+
     return sub_tri;
 }
 
@@ -48,12 +66,14 @@ Triangle split_tri_2_in_front_0(const Plane &plane, const Triangle &tri,
     sub_tri.vs[0] = tri.vs[v_in_front_0];
     sub_tri.vts[0] = tri.vts[v_in_front_0];
 
-    sub_tri.vs[1] = tri.vs[v_in_front_1];
-    sub_tri.vts[1] = tri.vts[v_in_front_1];
-
-    std::tie(sub_tri.vs[2], t) =
+    std::tie(sub_tri.vs[1], t) =
         plane.line_intersect_point(tri.vs[v_in_front_0], tri.vs[v_behind]);
-    sub_tri.vts[2] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
+    sub_tri.vts[1] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
+
+    sub_tri.vs[2] = tri.vs[v_in_front_1];
+    sub_tri.vts[2] = tri.vts[v_in_front_1];
+
+    match_winding_order(sub_tri, tri);
 
     return sub_tri;
 }
@@ -73,12 +93,14 @@ Triangle split_tri_2_in_front_1(const Plane &plane, const Triangle &tri,
     sub_tri.vts[0] = tri.vts[v_in_front_1];
 
     std::tie(sub_tri.vs[1], t) =
-        plane.line_intersect_point(tri.vs[v_in_front_1], tri.vs[v_behind]);
-    sub_tri.vts[1] = tri.vts[v_in_front_1].mix(tri.vts[v_behind], t);
+        plane.line_intersect_point(tri.vs[v_in_front_0], tri.vs[v_behind]);
+    sub_tri.vts[1] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
 
     std::tie(sub_tri.vs[2], t) =
-        plane.line_intersect_point(tri.vs[v_in_front_0], tri.vs[v_behind]);
-    sub_tri.vts[2] = tri.vts[v_in_front_0].mix(tri.vts[v_behind], t);
+        plane.line_intersect_point(tri.vs[v_in_front_1], tri.vs[v_behind]);
+    sub_tri.vts[2] = tri.vts[v_in_front_1].mix(tri.vts[v_behind], t);
+
+    match_winding_order(sub_tri, tri);
 
     return sub_tri;
 }
@@ -146,4 +168,13 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
                                     vs_behind, n_behind, ret.n_tris);
 
     return ret;
+}
+
+bool Plane::is_coplanar(const Plane &plane) const
+{
+    using namespace std;
+    return abs(abs(this->normal.x) - abs(plane.normal.x)) < 0.01f &&
+           abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
+           abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
+           abs(abs(this->d) - abs(plane.d)) < 0.01f;
 }

@@ -209,9 +209,10 @@ void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
+        /*
         if (depth_buffer[idx] <= z)
             continue;
-        depth_buffer[idx] = z;
+        depth_buffer[idx] = z;*/
 
         auto texel_coord = get_tex_coords(tri, bary_coords, z, texs[0]);
         size_t texel = Index::conv_2d_to_1d(texel_coord, texs[0].get_width());

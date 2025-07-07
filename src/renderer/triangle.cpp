@@ -69,7 +69,7 @@ Triangle::ProjectRet Triangle::project(const Camera &cam) const
 }
 
 void Triangle::render(Color *frame, float *depth_buffer, const Camera &cam,
-                      const Texture *texs)
+                      const Texture *texs) const
 {
     Triangle::ProjectRet project_ret;
     project_ret = this->project(cam);
@@ -77,4 +77,15 @@ void Triangle::render(Color *frame, float *depth_buffer, const Camera &cam,
     for (unsigned i = 0; i < project_ret.n_sub_tris; i++) {
         project_ret.sub_tris[i].render(frame, depth_buffer, texs);
     }
+}
+
+Plane Triangle::get_plane() const
+{
+    Vec3 a = this->vs[1] - this->vs[0];
+    Vec3 b = this->vs[2] - this->vs[0];
+
+    Vec3 normal = b.cross(a).normalize();
+    float d = normal.dot(this->vs[0]);
+
+    return Plane(normal, d);
 }

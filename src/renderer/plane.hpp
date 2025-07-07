@@ -24,4 +24,5 @@ public:
 
     // returns the part of the triangle vs that is in front of this.
     ClipTriangleRet clip(const Triangle &tri) const;
+    bool is_coplanar(const Plane &plane) const;
 };

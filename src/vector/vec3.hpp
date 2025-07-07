@@ -15,10 +15,13 @@ public:
     Vec3 operator*=(float x);
     Vec3 operator/(float x) const;
     Vec3 operator/=(float x);
+    Vec3 operator-() const;
 
     float dot(const Vec3 &v) const;
     Vec3 cross(const Vec3 &v) const;
     Vec3 rotate_about_y(float radians) const;
     Vec3 mix(const Vec3 &v, float t) const;
     float dist(const Vec3 &v) const;
+    float length() const;
+    Vec3 normalize() const;
 };

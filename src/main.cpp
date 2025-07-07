@@ -1,6 +1,7 @@
 #include "camera.hpp"
 #include "color.hpp"
 #include "obj_loader/obj_loader.hpp"
+#include "renderer/bsp.hpp"
 #include "renderer/triangle.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
@@ -25,6 +26,34 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f));
 
     auto tris = ObjLoader::load_file("../objs/cube.obj");
+    /*
+    std::vector<Triangle> tris;
+
+    tris.push_back(Triangle(
+        {Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 1.f), Vec3(1.f, 1.f, 1.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
+    tris.push_back(Triangle(
+        {Vec3(-1.f, -1.f, 1.f), Vec3(1.f, 1.f, 1.f), Vec3(-1.f, 1.f, 1.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
+
+    tris.push_back(Triangle(
+        {Vec3(-1.f, -1.f, 3.f), Vec3(-1.f, -1.f, 1.f), Vec3(-1.f, 1.f, 1.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
+    tris.push_back(Triangle(
+        {Vec3(-1.f, -1.f, 3.f), Vec3(-1.f, 1.f, 1.f), Vec3(-1.f, 1.f, 3.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
+
+    tris.push_back(Triangle(
+        {Vec3(1.f, -1.f, 3.f), Vec3(1.f, 1.f, 1.f), Vec3(1.f, -1.f, 1.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
+    tris.push_back(Triangle(
+        {Vec3(1.f, -1.f, 3.f), Vec3(1.f, 1.f, 3.f), Vec3(1.f, 1.f, 1.f)},
+        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
+    */
+
+    BSP bsp(tris);
+
+    printf("bsp has %zu tris\n", bsp.n_triangles());
 
     std::vector<Texture> texs(1);
     texs[0].load("../textures/img.png");
@@ -52,9 +81,11 @@ int main()
 
         cam.handle_input(delta_time, screen);
 
+        /*
         for (auto &tri : tris) {
             tri.render(frame.get(), depth_buffer.get(), cam, texs.data());
-        }
+        }*/
+        bsp.render(frame.get(), depth_buffer.get(), cam, texs.data());
 
         screen.update(frame.get());
     }
