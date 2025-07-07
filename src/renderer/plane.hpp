@@ -12,7 +12,7 @@ public:
     Vec3 normal;
     float d;
 
-    Plane(Vec3 normal = Vec3(0.f, 0.f, 0.f), float d = 0.f);
+    Plane(Vec3 normal, float d);
 
     std::tuple<Vec3, float> line_intersect_point(const Vec3 &start,
                                                  const Vec3 &end) const;

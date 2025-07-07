@@ -11,7 +11,8 @@ class Triangle {
 
 public:
     struct ProjectRet {
-        std::array<SubTriangle, 2> sub_tris;
+        std::array<SubTriangle, 2> sub_tris = {SubTriangle({}, {}),
+                                               SubTriangle({}, {})};
         unsigned n_sub_tris;
     };
 

@@ -19,3 +19,4 @@ file(GLOB_RECURSE Sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
 add_executable(quakent "${Sources}")
 
 target_link_libraries(quakent -lraylib -lGL -lm -lpthread -ldl -lrt -lX11)
+target_include_directories(quakent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

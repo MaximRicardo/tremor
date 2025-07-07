@@ -2,11 +2,11 @@
 
 #include <cstdint>
 
+// needs to be packed to guarantee alignment with uint8_t arrays
 class Color {
 
 public:
-    std::uint8_t r, g, b, a;
+    uint8_t r, g, b, a;
 
-    Color(std::uint8_t r = 0, std::uint8_t g = 0, std::uint8_t b = 0,
-          std::uint8_t a = 255);
+    Color(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t a = 255);
 } __attribute__((packed));

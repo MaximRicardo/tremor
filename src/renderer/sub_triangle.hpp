@@ -19,7 +19,7 @@ public:
 
     const Triangle *parent;
 
-    SubTriangle(std::array<Vec3, 3> vs = {}, std::array<Vec2, 3> vts = {},
+    SubTriangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
                 const Triangle *parent = nullptr);
 
     std::array<Vec2i, 3> get_screen_vs() const;
