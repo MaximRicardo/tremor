@@ -20,16 +20,17 @@ void Texture::load(std::string file_path)
     int width, height, channels;
     stbi_uc *data = stbi_load(file_path.c_str(), &width, &height, &channels, 3);
 
-    if (channels != 3) {
-        throw std::runtime_error("image " + file_path + "has " +
+    if (channels < 3) {
+        throw std::runtime_error("the image " + file_path + " has " +
                                  std::to_string(channels) +
-                                 "instead of the required 3\n");
+                                 ", which is not supported\n");
     }
 
     this->width = width;
     this->height = height;
     this->pixels.clear();
-    for (size_t i = 0; i < this->width * this->height * 3; i += 3) {
+    for (size_t i = 0; i < this->width * this->height * channels;
+         i += channels) {
         this->pixels.emplace_back(data[i + 0], data[i + 1], data[i + 2]);
     }
 
