@@ -80,6 +80,31 @@ Angle Angle::operator-() const
     return Angle(0.f) - *this;
 }
 
+bool Angle::operator<(const Angle &other) const
+{
+    return this->m_radians < other.m_radians;
+}
+
+bool Angle::operator<=(const Angle &other) const
+{
+    return this->m_radians <= other.m_radians;
+}
+
+bool Angle::operator>(const Angle &other) const
+{
+    return this->m_radians > other.m_radians;
+}
+
+bool Angle::operator>=(const Angle &other) const
+{
+    return this->m_radians >= other.m_radians;
+}
+
+bool Angle::operator==(const Angle &other) const
+{
+    return this->m_radians == other.m_radians;
+}
+
 EulerAngle::EulerAngle(Angle x, Angle y, Angle z) : x(x), y(y), z(z) {}
 
 EulerAngle EulerAngle::operator-() const

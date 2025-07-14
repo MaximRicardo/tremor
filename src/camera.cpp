@@ -2,6 +2,7 @@
 #include "angle.hpp"
 #include "fov.hpp"
 #include "input/input.hpp"
+#include <algorithm>
 #include <cmath>
 
 Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov)
@@ -9,9 +10,19 @@ Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov)
       vfov(FOV::horizontal_to_vertical(hfov))
 {}
 
+void Camera::limit_rotation()
+{
+    this->pitch = std::clamp(this->pitch, Angle(-85.f, Angle::Type::DEGREES),
+                             Angle(85.f, Angle::Type::DEGREES));
+
+    this->yaw.set(std::fmod(this->yaw.get(Angle::Type::DEGREES), 360.f),
+                  Angle::Type::DEGREES);
+}
+
 void Camera::handle_input(float delta_time, Screen &screen)
 {
     float mov_dist = delta_time;
+    float turn_speed = delta_time;
 
     if (Input::is_key_down(Input::Key::W, screen))
         this->pos += this->move_forward_vec() * mov_dist;
@@ -28,13 +39,15 @@ void Camera::handle_input(float delta_time, Screen &screen)
         this->pos.y += mov_dist;
 
     if (Input::is_key_down(Input::Key::UP, screen))
-        this->pitch -= Angle(delta_time);
+        this->pitch -= Angle(turn_speed);
     if (Input::is_key_down(Input::Key::DOWN, screen))
-        this->pitch += Angle(delta_time);
+        this->pitch += Angle(turn_speed);
     if (Input::is_key_down(Input::Key::LEFT, screen))
-        this->yaw += Angle(delta_time);
+        this->yaw += Angle(turn_speed);
     if (Input::is_key_down(Input::Key::RIGHT, screen))
-        this->yaw -= Angle(delta_time);
+        this->yaw -= Angle(turn_speed);
+
+    this->limit_rotation();
 }
 
 Vec3 Camera::look_forward_vec() const

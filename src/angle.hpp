@@ -21,6 +21,11 @@ public:
     Angle operator-(const Angle &other) const;
     Angle operator-=(const Angle &other);
     Angle operator-() const;
+    bool operator<(const Angle &other) const;
+    bool operator<=(const Angle &other) const;
+    bool operator>(const Angle &other) const;
+    bool operator>=(const Angle &other) const;
+    bool operator==(const Angle &other) const;
 
     static float convert(float angle, enum Type src_t, enum Type dest_t);
 };

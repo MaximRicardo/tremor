@@ -6,6 +6,9 @@
 
 class Camera {
 
+    // limits pitch to +-85 deg, and makes yaw wrap around past +-360 deg
+    void limit_rotation();
+
 public:
     Vec3 pos;
     // pitch is inverted, higher pitch means rotating further down
