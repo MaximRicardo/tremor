@@ -20,6 +20,7 @@ public:
     Angle operator+=(const Angle &other);
     Angle operator-(const Angle &other) const;
     Angle operator-=(const Angle &other);
+    Angle operator-() const;
 
     static float convert(float angle, enum Type src_t, enum Type dest_t);
 };
@@ -31,4 +32,6 @@ public:
     Angle x, y, z;
 
     EulerAngle(Angle x, Angle y, Angle z);
+
+    EulerAngle operator-() const;
 };

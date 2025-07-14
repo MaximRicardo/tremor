@@ -14,4 +14,7 @@ public:
     Camera(Vec3 pos, EulerAngle rot, Angle hfov = Angle(0.f));
 
     void handle_input(float delta_time, Screen &screen);
+    Vec3 forward() const;
+    Vec3 right() const;
+    Vec3 up() const;
 };

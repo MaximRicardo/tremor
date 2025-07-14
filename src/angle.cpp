@@ -75,4 +75,14 @@ Angle Angle::operator-=(const Angle &other)
     return *this = *this - other;
 }
 
+Angle Angle::operator-() const
+{
+    return Angle(0.f) - *this;
+}
+
 EulerAngle::EulerAngle(Angle x, Angle y, Angle z) : x(x), y(y), z(z) {}
+
+EulerAngle EulerAngle::operator-() const
+{
+    return EulerAngle(-this->x, -this->y, -this->z);
+}

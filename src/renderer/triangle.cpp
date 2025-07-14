@@ -13,7 +13,7 @@ namespace {
 // only accounts for y rotation rn
 Vec3 world_v_to_camera(const Vec3 &v, const Camera &cam)
 {
-    Vec3 w = (v - cam.pos).rotate_about_y(cam.rot.y);
+    Vec3 w = (v - cam.pos).rotate_about_xyz(-cam.rot);
 
     return w;
 }
