@@ -34,7 +34,7 @@ std::array<Vec3, 3> world_vs_to_camera(const std::array<Vec3, 3> &vs,
 // cam_vs is the camera-space vertices of the triangle to split.
 Triangle::ProjectRet
 split_tri_with_near_plane(const Triangle &tri,
-                          const std::array<Vec3, 3> &cam_vs)
+                          const std::array<Vec3, 3> &cam_vs, const Camera &cam)
 {
     Triangle::ProjectRet ret;
 
@@ -49,7 +49,7 @@ split_tri_with_near_plane(const Triangle &tri,
     for (unsigned i = 0; i < clip_ret.n_tris; i++) {
         ret.sub_tris[i] =
             SubTriangle(clip_ret.tris[i].vs, clip_ret.tris[i].vts, &tri);
-        ret.sub_tris[i].project_to_scr();
+        ret.sub_tris[i].project_to_scr(cam);
     }
 
     return ret;
@@ -65,7 +65,7 @@ Triangle::ProjectRet Triangle::project(const Camera &cam) const
 {
     auto cam_vs = world_vs_to_camera(this->vs, cam);
 
-    return split_tri_with_near_plane(*this, cam_vs);
+    return split_tri_with_near_plane(*this, cam_vs, cam);
 }
 
 void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,

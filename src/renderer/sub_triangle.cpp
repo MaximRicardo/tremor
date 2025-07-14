@@ -14,23 +14,27 @@
 
 namespace {
 
-Vec2 camera_v_to_norm_scr(const Vec3 &v)
+Vec2 camera_v_to_norm_scr(const Vec3 &v, const Camera &cam)
 {
+    float x_fov_mult = 1.f / std::tan(cam.hfov.get() / 2.f);
+    float y_fov_mult = 1.f / std::tan(cam.vfov.get() / 2.f);
+
     Vec2 w;
 
-    w.x = v.x / v.z;
-    w.y = v.y / v.z;
+    w.x = v.x * x_fov_mult / v.z;
+    w.y = v.y * y_fov_mult / v.z;
 
     return w;
 }
 
 // camera space -> normalized screen space
-std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs)
+std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs,
+                                          const Camera &cam)
 {
     std::array<Vec2, 3> result;
 
     for (size_t i = 0; i < vs.size(); ++i) {
-        result[i] = camera_v_to_norm_scr(vs[i]);
+        result[i] = camera_v_to_norm_scr(vs[i], cam);
     }
 
     return result;
@@ -39,7 +43,6 @@ std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs)
 Vec2i norm_scr_v_to_scr(const Vec2 &v)
 {
     Vec2i w;
-
     w.x = (v.x + 1.f) / 2.f * Res::width;
     w.y = (-v.y + 1.f) / 2.f * Res::height;
 
@@ -234,9 +237,9 @@ std::array<Vec2i, 3> SubTriangle::get_screen_vs() const
     return this->screen_vs;
 }
 
-void SubTriangle::project_to_scr()
+void SubTriangle::project_to_scr(const Camera &cam)
 {
-    auto norm_scr_vs = camera_vs_to_norm_scr(this->vs);
+    auto norm_scr_vs = camera_vs_to_norm_scr(this->vs, cam);
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 

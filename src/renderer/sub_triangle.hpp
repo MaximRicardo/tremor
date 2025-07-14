@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../camera.hpp"
 #include "../color.hpp"
 #include "../texture.hpp"
 #include "../vector/vec2.hpp"
@@ -24,7 +25,7 @@ public:
                 const Triangle *parent = nullptr);
 
     std::array<Vec2i, 3> get_screen_vs() const;
-    void project_to_scr();
+    void project_to_scr(const Camera &cam);
     void render(std::span<Color> frame, std::span<float> depth_buffer,
                 std::span<const Texture> texs);
 };
