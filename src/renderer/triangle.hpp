@@ -30,7 +30,9 @@ public:
     // vertex texture coords
     std::array<Vec2, 3> vts;
 
-    Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts);
+    size_t tex_idx;
+
+    Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts, size_t tex_idx);
 
     void render(std::span<Color> frame, std::span<float> depth_buffer,
                 const Camera &cam, std::span<const Texture> texs) const;

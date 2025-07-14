@@ -40,7 +40,7 @@ split_tri_with_near_plane(const Triangle &tri,
 
     Plane near_plane(Vec3(0.f, 0.f, 1.f), Consts::z_near);
 
-    Triangle cam_space_tri(cam_vs, tri.vts);
+    Triangle cam_space_tri(cam_vs, tri.vts, tri.tex_idx);
 
     Plane::ClipTriangleRet clip_ret;
     clip_ret = near_plane.clip(cam_space_tri);
@@ -57,8 +57,9 @@ split_tri_with_near_plane(const Triangle &tri,
 
 } // namespace
 
-Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts)
-    : vs(vs), vts(vts)
+Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
+                   size_t tex_idx)
+    : vs(vs), vts(vts), tex_idx(tex_idx)
 {}
 
 Triangle::ProjectRet Triangle::project(const Camera &cam) const

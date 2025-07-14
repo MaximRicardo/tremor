@@ -32,7 +32,7 @@ Triangle split_tri_1_in_front(const Plane &plane, const Triangle &tri,
                               size_t v_in_front, size_t v_behind_0,
                               size_t v_behind_1)
 {
-    Triangle sub_tri({}, {});
+    Triangle sub_tri({}, {}, tri.tex_idx);
 
     float t;
 
@@ -59,7 +59,7 @@ Triangle split_tri_2_in_front_0(const Plane &plane, const Triangle &tri,
                                 size_t v_in_front_0, size_t v_in_front_1,
                                 size_t v_behind)
 {
-    Triangle sub_tri({}, {});
+    Triangle sub_tri({}, {}, tri.tex_idx);
 
     float t;
 
@@ -85,7 +85,7 @@ Triangle split_tri_2_in_front_1(const Plane &plane, const Triangle &tri,
                                 size_t v_in_front_0, size_t v_in_front_1,
                                 size_t v_behind)
 {
-    Triangle sub_tri({}, {});
+    Triangle sub_tri({}, {}, tri.tex_idx);
 
     float t;
 
@@ -116,12 +116,12 @@ split_tri_with_plane(const Plane &plane, const Triangle &tri,
 
     if (n_in_front == 0) {
         n_sub_tris = 0;
-        return {Triangle({}, {}), Triangle({}, {})};
+        return {Triangle({}, {}, tri.tex_idx), Triangle({}, {}, tri.tex_idx)};
     } else if (n_in_front == 1) {
         n_sub_tris = 1;
         return {split_tri_1_in_front(plane, tri, vs_in_front[0], vs_behind[0],
                                      vs_behind[1]),
-                Triangle({}, {})};
+                Triangle({}, {}, tri.tex_idx)};
     } else if (n_in_front == 2) {
         n_sub_tris = 2;
         return {split_tri_2_in_front_0(plane, tri, vs_in_front[0],
@@ -130,7 +130,7 @@ split_tri_with_plane(const Plane &plane, const Triangle &tri,
                                        vs_in_front[1], vs_behind[0])};
     } else {
         n_sub_tris = 1;
-        return {tri, Triangle({}, {})};
+        return {tri, Triangle({}, {}, tri.tex_idx)};
     }
 }
 

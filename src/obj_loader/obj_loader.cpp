@@ -13,6 +13,8 @@
 
 namespace {
 
+constexpr size_t default_tex_idx = 0;
+
 // vertex coordinates, vertex normals, texture coords and such are stored in
 // this class
 template <typename T> struct VertexAttrib {
@@ -73,7 +75,8 @@ std::vector<Triangle> convert_v_coords_to_tris(VertexAttrib<Vec3> v_coords,
                       v_coords.values[v_coords.idxs[i + 2] - 1]},
                      {v_tex_coords.values[v_tex_coords.idxs[i] - 1],
                       v_tex_coords.values[v_tex_coords.idxs[i + 1] - 1],
-                      v_tex_coords.values[v_tex_coords.idxs[i + 2] - 1]});
+                      v_tex_coords.values[v_tex_coords.idxs[i + 2] - 1]},
+                     default_tex_idx);
 
         // we're only checking against the first vertex normal cuz that
         // SHOULD be good enough. i think.

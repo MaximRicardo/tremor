@@ -13,7 +13,7 @@ BSP::BSP(Triangle node_tri, BSP *parent)
 {}
 
 BSP::BSP(std::span<const Triangle> tris, BSP *parent)
-    : node_tri({}, {}), node_plane(Vec3(), 0.f), parent(parent)
+    : node_tri({}, {}, 0), node_plane(Vec3(), 0.f), parent(parent)
 {
     if (tris.size() == 0)
         return;

@@ -221,10 +221,11 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
         // rendering everything correctly
         depth_buffer[idx] = z;
 
-        auto texel_coord = get_tex_coords(tri, bary_coords, z, texs[0]);
-        size_t texel = Index::conv_2d_to_1d(texel_coord, texs[0].get_width());
+        auto &tex = texs[tri.parent->tex_idx];
+        auto texel_coord = get_tex_coords(tri, bary_coords, z, tex);
+        size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width());
 
-        frame[idx] = texs[0].get_pixels()[texel];
+        frame[idx] = tex.get_pixels()[texel];
     }
 }
 
