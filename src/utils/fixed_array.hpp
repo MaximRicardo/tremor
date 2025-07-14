@@ -75,12 +75,12 @@ public:
 
     T *end()
     {
-        return &this->elems[this->n_elems - 1];
+        return &this->elems[this->n_elems];
     }
 
     const T *end() const
     {
-        return &this->elems[this->n_elems - 1];
+        return &this->elems[this->n_elems];
     }
 
     bool empty() const
