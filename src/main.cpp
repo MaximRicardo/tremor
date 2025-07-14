@@ -6,10 +6,10 @@
 #include "screen/screen.hpp"
 #include "texture.hpp"
 #include "time.hpp"
+#include "utils/fixed_array.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <vector>
 
 int main()
@@ -19,8 +19,8 @@ int main()
     Screen screen(Res::width, Res::height, Res::upscaled_width,
                   Res::upscaled_height, "Quaken't");
 
-    auto frame = std::make_unique<Color[]>(Res::size);
-    auto depth_buffer = std::make_unique<float[]>(Res::size);
+    FixedArray<Color> frame(Res::size);
+    FixedArray<float> depth_buffer(Res::size);
 
     Camera cam(Vec3(0.f, 0.f, -2.f));
 
@@ -56,9 +56,8 @@ int main()
         for (auto &tri : tris) {
             tri.render(frame.get(), depth_buffer.get(), cam, texs.data());
         }*/
-        bsp.render(std::span(frame.get(), Res::size),
-                   std::span(depth_buffer.get(), Res::size), cam, texs);
+        bsp.render(frame, depth_buffer, cam, texs);
 
-        screen.update(frame.get());
+        screen.update(frame.data());
     }
 }
