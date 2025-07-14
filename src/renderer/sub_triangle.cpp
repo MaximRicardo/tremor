@@ -187,9 +187,10 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
 
 //
 // tri               - the triangle the line belongs to
-void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
-                            float *depth_buffer, const SubTriangle &tri,
-                            const Texture *texs)
+void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
+                            std::span<float> depth_buffer,
+                            const SubTriangle &tri,
+                            std::span<const Texture> texs)
 {
     if (y < 0 || y >= static_cast<int>(Res::height))
         return;
@@ -211,8 +212,8 @@ void render_horizontal_line(int y, int x_0, int x_1, Color *frame,
         float z = interpolate_z(tri, bary_coords);
         /*
         if (depth_buffer[idx] <= z)
-            continue;
-        depth_buffer[idx] = z;*/
+            continue;*/
+        depth_buffer[idx] = z;
 
         auto texel_coord = get_tex_coords(tri, bary_coords, z, texs[0]);
         size_t texel = Index::conv_2d_to_1d(texel_coord, texs[0].get_width());
@@ -239,7 +240,8 @@ void SubTriangle::project_to_scr()
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 
-void SubTriangle::render(Color *frame, float *depth_buffer, const Texture *texs)
+void SubTriangle::render(std::span<Color> frame, std::span<float> depth_buffer,
+                         std::span<const Texture> texs)
 {
     TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
 

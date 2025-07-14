@@ -13,9 +13,8 @@ class Screen {
     ScreenInfo *info;
 
 public:
-    Screen(std::uint32_t width, std::uint32_t height,
-           std::uint32_t upscaled_width, std::uint32_t upscaled_height,
-           std::string name);
+    Screen(uint32_t width, uint32_t height, uint32_t upscaled_width,
+           uint32_t upscaled_height, std::string name);
     ~Screen();
 
     // pixels is in an R8G8B8A8 format

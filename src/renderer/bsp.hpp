@@ -3,7 +3,7 @@
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <memory>
-#include <vector>
+#include <span>
 
 class BSP {
 
@@ -19,11 +19,11 @@ public:
     BSP *parent = nullptr;
 
     explicit BSP(Triangle tri, BSP *parent = nullptr);
-    explicit BSP(const std::vector<Triangle> &tris, BSP *parent = nullptr);
+    explicit BSP(std::span<const Triangle> tris, BSP *parent = nullptr);
 
     void insert(const Triangle &tri);
-    void insert(const std::vector<Triangle> &tris);
-    void render(Color *frame, float *depth_buffer, const Camera &cam,
-                const Texture *texs) const;
+    void insert(const std::span<Triangle> &tris);
+    void render(std::span<Color> frame, std::span<float> depth_buffer,
+                const Camera &cam, std::span<const Texture> texs) const;
     size_t n_triangles() const;
 };

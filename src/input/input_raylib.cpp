@@ -41,7 +41,7 @@ int key_enum_to_raylib(Input::Key key)
 
 } // namespace
 
-bool Input::is_key_down(Key key, __attribute__((unused)) Screen &screen)
+bool Input::is_key_down(Key key, [[maybe_unused]] Screen &screen)
 {
     return IsKeyDown(key_enum_to_raylib(key));
 }

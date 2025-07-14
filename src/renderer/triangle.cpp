@@ -68,8 +68,9 @@ Triangle::ProjectRet Triangle::project(const Camera &cam) const
     return split_tri_with_near_plane(*this, cam_vs);
 }
 
-void Triangle::render(Color *frame, float *depth_buffer, const Camera &cam,
-                      const Texture *texs) const
+void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,
+                      const Camera &cam,
+                      const std::span<const Texture> texs) const
 {
     Triangle::ProjectRet project_ret;
     project_ret = this->project(cam);

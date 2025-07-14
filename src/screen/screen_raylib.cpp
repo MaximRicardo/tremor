@@ -9,10 +9,10 @@ class ScreenInfo {
 
 public:
     Texture screen_tex;
-    std::uint32_t width;
-    std::uint32_t height;
-    std::uint32_t up_width;
-    std::uint32_t up_height;
+    uint32_t width;
+    uint32_t height;
+    uint32_t up_width;
+    uint32_t up_height;
 };
 
 namespace {
@@ -31,9 +31,8 @@ void init_screen_tex(Texture &screen_tex, std::uint32_t width,
 
 } // namespace
 
-Screen::Screen(std::uint32_t width, std::uint32_t height,
-               std::uint32_t upscaled_width, std::uint32_t upscaled_height,
-               std::string name)
+Screen::Screen(uint32_t width, uint32_t height, uint32_t upscaled_width,
+               uint32_t upscaled_height, std::string name)
 {
     this->info = new ScreenInfo;
 

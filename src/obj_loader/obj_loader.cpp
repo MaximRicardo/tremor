@@ -39,10 +39,10 @@ void read_idxs_line(std::vector<size_t> &vs_idxs, std::vector<size_t> &vts_idxs,
 }
 
 // triangulation not supported (yet)
-std::vector<Triangle> convert_vs_to_tris(const std::vector<Vec3> &vs,
-                                         const std::vector<size_t> &vs_idxs,
-                                         const std::vector<Vec2> &vts,
-                                         const std::vector<size_t> &vts_idxs)
+std::vector<Triangle> convert_vs_to_tris(std::span<const Vec3> vs,
+                                         std::span<const size_t> vs_idxs,
+                                         std::span<const Vec2> vts,
+                                         std::span<const size_t> vts_idxs)
 {
     std::vector<Triangle> tris;
 
@@ -95,7 +95,7 @@ std::vector<Triangle> read_file(std::ifstream &file)
 
 } // namespace
 
-std::vector<Triangle> ObjLoader::load_file(std::string file_path)
+std::vector<Triangle> ObjLoader::load_file(const std::string &file_path)
 {
     std::ifstream file(file_path);
     if (file.fail()) {

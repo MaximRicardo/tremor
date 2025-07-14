@@ -6,6 +6,6 @@
 
 namespace ObjLoader {
 
-std::vector<Triangle> load_file(std::string file_path);
+std::vector<Triangle> load_file(const std::string &file_path);
 
 }

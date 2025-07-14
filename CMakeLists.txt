@@ -5,10 +5,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(quakent)
 
-add_compile_options(-Wall -Wextra -Wpedantic -Dm_RAYLIB=1)
+add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -Dm_RAYLIB=1)
 
 # i am speed
-# add_compile_options(-ftree-vectorize -msse2 -mfpmath=sse -O2)
+ add_compile_options(-ftree-vectorize -msse2 -mfpmath=sse -O2)
 
 # for debugging
 # add_compile_options(-ggdb3 -fsanitize=address -fsanitize=undefined)

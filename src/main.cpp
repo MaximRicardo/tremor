@@ -2,14 +2,13 @@
 #include "color.hpp"
 #include "obj_loader/obj_loader.hpp"
 #include "renderer/bsp.hpp"
-#include "renderer/triangle.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "texture.hpp"
 #include "time.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -25,41 +24,13 @@ int main()
 
     Camera cam(Vec3(0.f, 0.f, -2.f));
 
-    auto tris = ObjLoader::load_file("../objs/cube.obj");
-    /*
-    std::vector<Triangle> tris;
-
-    tris.push_back(Triangle(
-        {Vec3(-1.f, -1.f, 1.f), Vec3(1.f, -1.f, 1.f), Vec3(1.f, 1.f, 1.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
-    tris.push_back(Triangle(
-        {Vec3(-1.f, -1.f, 1.f), Vec3(1.f, 1.f, 1.f), Vec3(-1.f, 1.f, 1.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
-
-    tris.push_back(Triangle(
-        {Vec3(-1.f, -1.f, 3.f), Vec3(-1.f, -1.f, 1.f), Vec3(-1.f, 1.f, 1.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
-    tris.push_back(Triangle(
-        {Vec3(-1.f, -1.f, 3.f), Vec3(-1.f, 1.f, 1.f), Vec3(-1.f, 1.f, 3.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
-
-    tris.push_back(Triangle(
-        {Vec3(1.f, -1.f, 3.f), Vec3(1.f, 1.f, 1.f), Vec3(1.f, -1.f, 1.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 1.f), Vec2(1.f, 0.f)}));
-    tris.push_back(Triangle(
-        {Vec3(1.f, -1.f, 3.f), Vec3(1.f, 1.f, 3.f), Vec3(1.f, 1.f, 1.f)},
-        {Vec2(0.f, 1.f), Vec2(1.f, 0.f), Vec2(0.f, 0.f)}));
-    */
-
+    auto tris = ObjLoader::load_file("../objs/sphere.obj");
     BSP bsp(tris);
 
-    printf("bsp has %zu tris\n", bsp.n_triangles());
+    std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
 
     std::vector<Texture> texs(1);
     texs[0].load("../textures/img.png");
-
-    printf("n pixels = %zu, dims = %ux%u\n", texs[0].get_pixels().size(),
-           texs[0].get_width(), texs[0].get_height());
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
@@ -72,7 +43,7 @@ int main()
 
         prev_time = Time::get_ticks_ms();
 
-        printf("delta_time = %f\n", delta_time);
+        std::cout << "delta_time = " << delta_time << '\n';
 
         for (std::size_t i = 0; i < Res::size; i++) {
             frame[i] = Color(0, 0, 0);
@@ -85,7 +56,8 @@ int main()
         for (auto &tri : tris) {
             tri.render(frame.get(), depth_buffer.get(), cam, texs.data());
         }*/
-        bsp.render(frame.get(), depth_buffer.get(), cam, texs.data());
+        bsp.render(std::span(frame.get(), Res::size),
+                   std::span(depth_buffer.get(), Res::size), cam, texs);
 
         screen.update(frame.get());
     }

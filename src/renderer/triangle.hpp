@@ -6,6 +6,7 @@
 #include "../vector/vec3.hpp"
 #include "sub_triangle.hpp"
 #include <array>
+#include <span>
 
 class Plane;
 
@@ -31,8 +32,8 @@ public:
 
     Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts);
 
-    void render(Color *frame, float *depth_buffer, const Camera &cam,
-                const Texture *texs) const;
+    void render(std::span<Color> frame, std::span<float> depth_buffer,
+                const Camera &cam, std::span<const Texture> texs) const;
 
     Plane get_plane() const;
 };

@@ -5,6 +5,7 @@
 #include "../vector/vec2.hpp"
 #include "../vector/vec3.hpp"
 #include <array>
+#include <span>
 
 class Triangle;
 
@@ -24,5 +25,6 @@ public:
 
     std::array<Vec2i, 3> get_screen_vs() const;
     void project_to_scr();
-    void render(Color *frame, float *depth_buffer, const Texture *texs);
+    void render(std::span<Color> frame, std::span<float> depth_buffer,
+                std::span<const Texture> texs);
 };
