@@ -2,7 +2,7 @@
 
 #include "color.hpp"
 #include <cstdint>
-#include <string>
+#include <filesystem>
 #include <vector>
 
 class Texture {
@@ -11,8 +11,10 @@ class Texture {
     uint32_t width;
     uint32_t height;
 
+    void load(const std::filesystem::path &path);
+
 public:
-    void load(std::string file_path);
+    Texture(const std::filesystem::path &path);
 
     const std::vector<Color> &get_pixels() const;
     uint32_t get_width() const;

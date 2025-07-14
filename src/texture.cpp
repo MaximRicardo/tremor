@@ -9,19 +9,24 @@
 #include <string>
 #include <vector>
 
-void Texture::load(std::string file_path)
+Texture::Texture(const std::filesystem::path &path)
 {
-    std::ifstream file(file_path, std::ios::binary);
+    this->load(path);
+}
+
+void Texture::load(const std::filesystem::path &path)
+{
+    std::ifstream file(path, std::ios::binary);
     if (file.fail()) {
-        throw std::runtime_error("can't open image file " + file_path + ": " +
-                                 std::strerror(errno));
+        throw std::runtime_error("can't open image file " + path.string() +
+                                 ": " + std::strerror(errno));
     }
 
     int width, height, channels;
-    stbi_uc *data = stbi_load(file_path.c_str(), &width, &height, &channels, 3);
+    stbi_uc *data = stbi_load(path.c_str(), &width, &height, &channels, 3);
 
     if (channels < 3) {
-        throw std::runtime_error("the image " + file_path + " has " +
+        throw std::runtime_error("the image " + path.string() + " has " +
                                  std::to_string(channels) +
                                  ", which is not supported\n");
     }

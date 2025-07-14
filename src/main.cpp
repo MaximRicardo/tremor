@@ -31,8 +31,8 @@ int main()
 
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
 
-    std::vector<Texture> texs(1);
-    texs[0].load("../textures/img.png");
+    std::vector<Texture> texs;
+    texs.emplace_back("../textures/img.png");
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
