@@ -1,6 +1,7 @@
 #include "vec3.hpp"
 #include <cmath>
 
+Vec3::Vec3() {}
 Vec3::Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
 
 Vec3 Vec3::operator+(const Vec3 &v) const
@@ -63,13 +64,40 @@ Vec3 Vec3::cross(const Vec3 &v) const
             this->x * v.y - this->y * v.x};
 }
 
+Vec3 Vec3::rotate_about_x(Angle amount) const
+{
+    Vec3 v;
+    v.x = this->x;
+    v.y = this->y * std::cos(amount.get()) - this->z * std::sin(amount.get());
+    v.z = this->y * std::sin(amount.get()) + this->z * std::cos(amount.get());
+    return v;
+}
+
 Vec3 Vec3::rotate_about_y(Angle amount) const
 {
-    Vec3 w;
-    w.x = this->x * std::cos(amount.get()) - this->z * std::sin(amount.get());
-    w.y = this->y;
-    w.z = this->x * std::sin(amount.get()) + this->z * std::cos(amount.get());
-    return w;
+    Vec3 v;
+    v.x = this->x * std::cos(amount.get()) - this->z * std::sin(amount.get());
+    v.y = this->y;
+    v.z = this->x * std::sin(amount.get()) + this->z * std::cos(amount.get());
+    return v;
+}
+
+Vec3 Vec3::rotate_about_z(Angle amount) const
+{
+    Vec3 v;
+    v.x = this->x * std::cos(amount.get()) - this->y * std::sin(amount.get());
+    v.y = this->x * std::sin(amount.get()) + this->y * std::cos(amount.get());
+    v.z = this->z;
+    return v;
+}
+
+Vec3 Vec3::rotate_about_xyz(const EulerAngle &amount) const
+{
+    Vec3 v = *this;
+    v = v.rotate_about_x(amount.x);
+    v = v.rotate_about_y(amount.y);
+    v = v.rotate_about_z(amount.z);
+    return v;
 }
 
 Vec3 Vec3::mix(const Vec3 &v, float t) const

@@ -7,7 +7,8 @@ class Vec3 {
 public:
     float x, y, z;
 
-    Vec3(float x = 0.f, float y = 0.f, float z = 0.f);
+    Vec3();
+    Vec3(float x, float y, float z);
 
     Vec3 operator+(const Vec3 &v) const;
     Vec3 operator+=(const Vec3 &v);
@@ -21,7 +22,11 @@ public:
 
     float dot(const Vec3 &v) const;
     Vec3 cross(const Vec3 &v) const;
+    Vec3 rotate_about_x(Angle amount) const;
     Vec3 rotate_about_y(Angle amount) const;
+    Vec3 rotate_about_z(Angle amount) const;
+    // rotates about x, then y, then z
+    Vec3 rotate_about_xyz(const EulerAngle &amount) const;
     Vec3 mix(const Vec3 &v, float t) const;
     float dist(const Vec3 &v) const;
     float length() const;

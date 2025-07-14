@@ -1,5 +1,6 @@
 #include "vec2.hpp"
 
+Vec2::Vec2() {};
 Vec2::Vec2(float x, float y) : x(x), y(y) {}
 Vec2::Vec2(const Vec2i &v) : x(v.x), y(v.y) {}
 
@@ -57,6 +58,7 @@ Vec2 Vec2::mix(const Vec2 &v, float t) const
     return *this + (v - *this) * t;
 }
 
+Vec2i::Vec2i() {}
 Vec2i::Vec2i(int x, int y) : x(x), y(y) {}
 Vec2i::Vec2i(const Vec2 &v) : x(v.x), y(v.y) {}
 
