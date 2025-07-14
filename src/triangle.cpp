@@ -1,5 +1,5 @@
 #include "triangle.hpp"
-#include "../constants.hpp"
+#include "constants.hpp"
 #include "plane.hpp"
 #include "sub_triangle.hpp"
 #include <array>

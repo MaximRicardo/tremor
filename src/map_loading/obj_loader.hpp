@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../renderer/triangle.hpp"
+#include "../triangle.hpp"
 #include <filesystem>
 #include <vector>
 

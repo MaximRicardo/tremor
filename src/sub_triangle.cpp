@@ -1,7 +1,7 @@
 #include "sub_triangle.hpp"
-#include "../index.hpp"
-#include "../resolution.hpp"
-#include "../texture.hpp"
+#include "index.hpp"
+#include "resolution.hpp"
+#include "texture.hpp"
 #include "triangle.hpp"
 #include <algorithm>
 #include <array>

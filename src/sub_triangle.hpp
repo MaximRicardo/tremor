@@ -1,15 +1,18 @@
 #pragma once
 
-#include "../camera.hpp"
-#include "../color.hpp"
-#include "../texture.hpp"
-#include "../vector/vec2.hpp"
-#include "../vector/vec3.hpp"
+#include "camera.hpp"
+#include "color.hpp"
+#include "texture.hpp"
+#include "vector/vec2.hpp"
+#include "vector/vec3.hpp"
 #include <array>
 #include <span>
 
 class Triangle;
 
+// used exclusively for rendering.
+// when a triangle is clipped with the near plane, 0-2 instances of SubTriangle
+// will be created and rendered.
 class SubTriangle {
 
     std::array<Vec2i, 3> screen_vs;

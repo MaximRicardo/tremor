@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../camera.hpp"
-#include "../color.hpp"
-#include "../texture.hpp"
-#include "../vector/vec3.hpp"
+#include "camera.hpp"
+#include "color.hpp"
 #include "sub_triangle.hpp"
+#include "texture.hpp"
+#include "vector/vec3.hpp"
 #include <array>
 #include <span>
 

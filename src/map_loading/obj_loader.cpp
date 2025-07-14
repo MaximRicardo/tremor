@@ -1,5 +1,5 @@
 #include "obj_loader.hpp"
-#include "../renderer/plane.hpp"
+#include "../plane.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
