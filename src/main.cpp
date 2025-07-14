@@ -1,6 +1,6 @@
 #include "camera.hpp"
 #include "color.hpp"
-#include "obj_loader/obj_loader.hpp"
+#include "map_loading/obj_loader.hpp"
 #include "renderer/bsp.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
