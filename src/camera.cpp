@@ -37,18 +37,18 @@ void Camera::handle_input(float delta_time, Screen &screen)
 
 Vec3 Camera::forward() const
 {
-    Vec3 v = Vec3(0.f, 0.f, 1.f).rotate_about_xyz(this->rot);
+    Vec3 v = Vec3(0.f, 0.f, 1.f).rotate(this->rot);
     return v;
 }
 
 Vec3 Camera::right() const
 {
-    Vec3 v = Vec3(1.f, 0.f, 0.f).rotate_about_xyz(this->rot);
+    Vec3 v = Vec3(1.f, 0.f, 0.f).rotate(this->rot);
     return v;
 }
 
 Vec3 Camera::up() const
 {
-    Vec3 v = Vec3(0.f, 1.f, 0.f).rotate_about_xyz(this->rot);
+    Vec3 v = Vec3(0.f, 1.f, 0.f).rotate(this->rot);
     return v;
 }

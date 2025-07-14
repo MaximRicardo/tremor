@@ -91,12 +91,12 @@ Vec3 Vec3::rotate_about_z(Angle amount) const
     return v;
 }
 
-Vec3 Vec3::rotate_about_xyz(const EulerAngle &amount) const
+Vec3 Vec3::rotate(const EulerAngle &amount) const
 {
     Vec3 v = *this;
-    v = v.rotate_about_x(amount.x);
-    v = v.rotate_about_y(amount.y);
     v = v.rotate_about_z(amount.z);
+    v = v.rotate_about_y(amount.y);
+    v = v.rotate_about_x(amount.x);
     return v;
 }
 
