@@ -13,13 +13,22 @@
 
 namespace {
 
+// vertex coordinates, vertex normals, texture coords and such are stored in
+// this class
+template <typename T> struct VertexAttrib {
+
+    std::vector<T> values;
+    std::vector<size_t> idxs;
+};
+
 // reads a line prefixed with 'f'. the stream must start at the first num.
-void read_idxs_line(std::vector<size_t> &vs_idxs, std::vector<size_t> &vts_idxs,
-                    std::vector<size_t> &normal_idxs, std::stringstream &stream)
+void read_idxs_line(VertexAttrib<Vec3> &v_coords,
+                    VertexAttrib<Vec2> &v_tex_coords,
+                    VertexAttrib<Vec3> &v_normals, std::stringstream &stream)
 {
     size_t idx;
     while (stream >> idx) {
-        vs_idxs.push_back(idx);
+        v_coords.idxs.push_back(idx);
 
         // there's probably a cleaner way to do this but this works
         char c;
@@ -33,9 +42,9 @@ void read_idxs_line(std::vector<size_t> &vs_idxs, std::vector<size_t> &vts_idxs,
             stream >> num;
 
             if (i == 0)
-                vts_idxs.push_back(num);
+                v_tex_coords.idxs.push_back(num);
             else if (i == 1)
-                normal_idxs.push_back(num);
+                v_normals.idxs.push_back(num);
 
             ++i;
         }
@@ -52,24 +61,23 @@ static void match_normals(Triangle &tri, const Vec3 &normal)
 }
 
 // triangulation not supported (yet)
-std::vector<Triangle> convert_vs_to_tris(std::span<const Vec3> vs,
-                                         std::span<const size_t> vs_idxs,
-                                         std::span<const Vec2> vts,
-                                         std::span<const size_t> vts_idxs,
-                                         std::span<const Vec3> normals,
-                                         std::span<const size_t> normal_idxs)
+std::vector<Triangle> convert_v_coords_to_tris(VertexAttrib<Vec3> v_coords,
+                                               VertexAttrib<Vec2> v_tex_coords,
+                                               VertexAttrib<Vec3> v_normals)
 {
     std::vector<Triangle> tris;
 
-    for (size_t i = 0; i < vs_idxs.size(); i += 3) {
-        Triangle tri({vs[vs_idxs[i] - 1], vs[vs_idxs[i + 1] - 1],
-                      vs[vs_idxs[i + 2] - 1]},
-                     {vts[vts_idxs[i] - 1], vts[vts_idxs[i + 1] - 1],
-                      vts[vts_idxs[i + 2] - 1]});
+    for (size_t i = 0; i < v_coords.idxs.size(); i += 3) {
+        Triangle tri({v_coords.values[v_coords.idxs[i] - 1],
+                      v_coords.values[v_coords.idxs[i + 1] - 1],
+                      v_coords.values[v_coords.idxs[i + 2] - 1]},
+                     {v_tex_coords.values[v_tex_coords.idxs[i] - 1],
+                      v_tex_coords.values[v_tex_coords.idxs[i + 1] - 1],
+                      v_tex_coords.values[v_tex_coords.idxs[i + 2] - 1]});
 
         // we're only checking against the first vertex normal cuz that
         // SHOULD be good enough. i think.
-        match_normals(tri, normals[normal_idxs[i] - 1]);
+        match_normals(tri, v_normals.values[v_normals.idxs[i] - 1]);
 
         tris.push_back(tri);
     }
@@ -81,15 +89,9 @@ std::vector<Triangle> read_file(std::ifstream &file)
 {
     std::string line;
 
-    // vertices
-    std::vector<Vec3> vs;
-    std::vector<size_t> vs_idxs;
-    // tex coords
-    std::vector<Vec2> vts;
-    std::vector<size_t> vts_idxs;
-    // vectex normals
-    std::vector<Vec3> normals;
-    std::vector<size_t> normal_idxs;
+    VertexAttrib<Vec3> v_coords;
+    VertexAttrib<Vec2> v_tex_coords;
+    VertexAttrib<Vec3> v_normals;
 
     while (std::getline(file, line)) {
         if (line.empty())
@@ -103,24 +105,24 @@ std::vector<Triangle> read_file(std::ifstream &file)
             stream >> x;
             stream >> y;
             stream >> z;
-            vs.emplace_back(x, y, z);
+            v_coords.values.emplace_back(x, y, z);
         } else if (prefix == "vt") {
             float u, v;
             stream >> u;
             stream >> v;
-            vts.emplace_back(u, v);
+            v_tex_coords.values.emplace_back(u, v);
         } else if (prefix == "vn") {
             float x, y, z;
             stream >> x;
             stream >> y;
             stream >> z;
-            normals.emplace_back(x, y, z);
+            v_normals.values.emplace_back(x, y, z);
         } else if (prefix == "f") {
-            read_idxs_line(vs_idxs, vts_idxs, normal_idxs, stream);
+            read_idxs_line(v_coords, v_tex_coords, v_normals, stream);
         }
     }
 
-    return convert_vs_to_tris(vs, vs_idxs, vts, vts_idxs, normals, normal_idxs);
+    return convert_v_coords_to_tris(v_coords, v_tex_coords, v_normals);
 }
 
 } // namespace
