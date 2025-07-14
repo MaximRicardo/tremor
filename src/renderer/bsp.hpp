@@ -14,8 +14,9 @@ public:
     Triangle node_tri;
     Plane node_plane;
 
-    std::unique_ptr<BSP> lhs = nullptr; // contains the tris behind self
-    std::unique_ptr<BSP> rhs = nullptr; // contains the tris in front of self
+    // these nodes contain the child tris behind and in front of this
+    std::unique_ptr<BSP> behind = nullptr;
+    std::unique_ptr<BSP> in_front = nullptr;
     BSP *parent = nullptr;
 
     explicit BSP(Triangle tri, BSP *parent = nullptr);
