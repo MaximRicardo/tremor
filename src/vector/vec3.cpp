@@ -100,6 +100,25 @@ Vec3 Vec3::rotate(const EulerAngle &amount) const
     return v;
 }
 
+// from https://math.stackexchange.com/q/1432182 in case you don't get why this
+// works. dw, i don't either.
+Vec3 Vec3::rotate(Angle amount, Vec3 axis) const
+{
+    axis = axis.normalize();
+
+    // this might rotate in the wrong direction. if so, try adding a negative
+    // sign somewhere.
+    Vec3 this_in_axis = axis * this->dot(axis);
+    Vec3 this_orthog_axis = *this - this_in_axis;
+    Vec3 w = axis.cross(this_orthog_axis);
+    float x_1 = std::cos(amount.get()) / this_orthog_axis.length();
+    float x_2 = std::sin(amount.get()) / w.length();
+    Vec3 rot_this_orthog_axis =
+        (this_orthog_axis * x_1 + w * x_2) * this_orthog_axis.length();
+    Vec3 rot_this = rot_this_orthog_axis + this_in_axis;
+    return rot_this;
+}
+
 Vec3 Vec3::mix(const Vec3 &v, float t) const
 {
     return *this + (v - *this) * t;

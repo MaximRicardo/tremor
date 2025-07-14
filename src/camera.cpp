@@ -2,53 +2,83 @@
 #include "angle.hpp"
 #include "fov.hpp"
 #include "input/input.hpp"
-#include <iostream>
+#include <cmath>
 
-Camera::Camera(Vec3 pos, EulerAngle rot, Angle hfov)
-    : pos(pos), rot(rot), hfov(hfov), vfov(FOV::horizontal_to_vertical(hfov))
+Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov)
+    : pos(pos), yaw(yaw), pitch(pitch), hfov(hfov),
+      vfov(FOV::horizontal_to_vertical(hfov))
 {}
 
 void Camera::handle_input(float delta_time, Screen &screen)
 {
     float mov_dist = delta_time;
 
-    std::cout << this->forward().x << ", " << this->forward().y << ", "
-              << this->forward().z << '\n';
-
     if (Input::is_key_down(Input::Key::W, screen))
-        this->pos += this->forward() * mov_dist;
+        this->pos += this->move_forward_vec() * mov_dist;
     if (Input::is_key_down(Input::Key::S, screen))
-        this->pos -= this->forward() * mov_dist;
+        this->pos -= this->move_forward_vec() * mov_dist;
     if (Input::is_key_down(Input::Key::A, screen))
-        this->pos -= this->right() * mov_dist;
+        this->pos -= this->move_right_vec() * mov_dist;
     if (Input::is_key_down(Input::Key::D, screen))
-        this->pos += this->right() * mov_dist;
+        this->pos += this->move_right_vec() * mov_dist;
 
     if (Input::is_key_down(Input::Key::Q, screen))
         this->pos.y -= mov_dist;
     if (Input::is_key_down(Input::Key::E, screen))
         this->pos.y += mov_dist;
 
+    if (Input::is_key_down(Input::Key::UP, screen))
+        this->pitch -= Angle(delta_time);
+    if (Input::is_key_down(Input::Key::DOWN, screen))
+        this->pitch += Angle(delta_time);
     if (Input::is_key_down(Input::Key::LEFT, screen))
-        this->rot.y += Angle(delta_time);
+        this->yaw += Angle(delta_time);
     if (Input::is_key_down(Input::Key::RIGHT, screen))
-        this->rot.y -= Angle(delta_time);
+        this->yaw -= Angle(delta_time);
 }
 
-Vec3 Camera::forward() const
+Vec3 Camera::look_forward_vec() const
 {
-    Vec3 v = Vec3(0.f, 0.f, 1.f).rotate(this->rot);
+    Vec3 v = Vec3(0.f, 0.f, 1.f);
+    v = v.rotate_about_x(this->pitch);
+    v = v.rotate_about_y(this->yaw);
     return v;
 }
 
-Vec3 Camera::right() const
+Vec3 Camera::move_forward_vec() const
 {
-    Vec3 v = Vec3(1.f, 0.f, 0.f).rotate(this->rot);
+    Vec3 v = Vec3(0.f, 0.f, 1.f);
+    v = v.rotate_about_y(this->yaw);
     return v;
 }
 
-Vec3 Camera::up() const
+Vec3 Camera::look_right_vec() const
 {
-    Vec3 v = Vec3(0.f, 1.f, 0.f).rotate(this->rot);
+    Vec3 v = Vec3(1.f, 0.f, 0.f);
+    // rotating about x isn't necessary since the y and z components are 0 and
+    // a rotation about x leaves the x component unmodified
+    v = v.rotate_about_y(this->yaw);
+    return v;
+}
+
+Vec3 Camera::move_right_vec() const
+{
+    Vec3 v = Vec3(1.f, 0.f, 0.f);
+    v = v.rotate_about_y(this->yaw);
+    return v;
+}
+
+Vec3 Camera::look_up_vec() const
+{
+    Vec3 v = Vec3(0.f, 1.f, 0.f);
+    v = v.rotate_about_x(this->pitch);
+    v = v.rotate_about_y(this->yaw);
+    return v;
+}
+
+Vec3 Camera::move_up_vec() const
+{
+    Vec3 v = Vec3(0.f, 1.f, 0.f);
+    v = v.rotate_about_y(this->yaw);
     return v;
 }

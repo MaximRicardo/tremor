@@ -31,6 +31,12 @@ int key_enum_to_raylib(Input::Key key)
     case Input::Key::E:
         return KEY_E;
 
+    case Input::Key::UP:
+        return KEY_UP;
+
+    case Input::Key::DOWN:
+        return KEY_DOWN;
+
     case Input::Key::LEFT:
         return KEY_LEFT;
 

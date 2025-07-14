@@ -22,8 +22,7 @@ int main()
     FixedArray<Color> frame(Res::size);
     FixedArray<float> depth_buffer(Res::size);
 
-    Camera cam(Vec3(0.f, 0.f, -2.f),
-               EulerAngle(Angle(0.f), Angle(0.f), Angle(0.f)),
+    Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
     auto tris = ObjLoader::load_file("../objs/sphere.obj");
