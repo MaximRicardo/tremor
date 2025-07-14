@@ -155,9 +155,7 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
     unsigned n_behind = 0;
 
     for (size_t i = 0; i < tri.vs.size(); i++) {
-        float v_d = normal.dot(tri.vs[i]);
-
-        if (v_d < this->d)
+        if (this->is_point_behind(tri.vs[i]))
             vs_behind[n_behind++] = i;
         else
             vs_in_front[n_in_front++] = i;
@@ -177,4 +175,9 @@ bool Plane::is_coplanar(const Plane &plane) const
            abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
            abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
            abs(abs(this->d) - abs(plane.d)) < 0.01f;
+}
+
+bool Plane::is_point_behind(const Vec3 &p) const
+{
+    return this->normal.dot(p) < this->d;
 }

@@ -14,6 +14,8 @@ public:
 
     Plane(Vec3 normal, float d);
 
+    // retursn the intersection point and it's distance from start, relative to
+    // the distance between start and end.
     std::tuple<Vec3, float> line_intersect_point(const Vec3 &start,
                                                  const Vec3 &end) const;
 
@@ -23,7 +25,10 @@ public:
         unsigned n_tris;
     };
 
+    // TODO: move this function into the Triangle class instead
     // returns the part of the triangle vs that is in front of this.
     ClipTriangleRet clip(const Triangle &tri) const;
+
     bool is_coplanar(const Plane &plane) const;
+    bool is_point_behind(const Vec3 &p) const;
 };
