@@ -90,6 +90,8 @@ void BSP::insert(const std::span<Triangle> &tris)
     }
 }
 
+// if, no scratch that, WHEN performance becomes an issue, see if making this
+// iterative instead of recursive helps.
 void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
                  const Camera &cam, std::span<const Texture> texs) const
 {
