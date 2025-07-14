@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace {
@@ -95,11 +95,11 @@ std::vector<Triangle> read_file(std::ifstream &file)
 
 } // namespace
 
-std::vector<Triangle> ObjLoader::load_file(const std::string &file_path)
+std::vector<Triangle> ObjLoader::load_file(const std::filesystem::path &path)
 {
-    std::ifstream file(file_path);
+    std::ifstream file(path);
     if (file.fail()) {
-        throw std::runtime_error("can't open obj file " + file_path + ": " +
+        throw std::runtime_error("can't open obj file " + path.string() + ": " +
                                  strerror(errno));
     }
 

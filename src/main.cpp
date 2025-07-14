@@ -26,7 +26,7 @@ int main()
                EulerAngle(Angle(0.f), Angle(0.f), Angle(0.f)),
                Angle(90.f, Angle::Type::DEGREES));
 
-    auto tris = ObjLoader::load_file("../objs/sphere.obj");
+    auto tris = ObjLoader::load_file("../objs/cube.obj");
     BSP bsp(tris);
 
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
