@@ -63,12 +63,12 @@ Vec3 Vec3::cross(const Vec3 &v) const
             this->x * v.y - this->y * v.x};
 }
 
-Vec3 Vec3::rotate_about_y(float radians) const
+Vec3 Vec3::rotate_about_y(Angle amount) const
 {
     Vec3 w;
-    w.x = this->x * std::cos(radians) - this->z * std::sin(radians);
+    w.x = this->x * std::cos(amount.get()) - this->z * std::sin(amount.get());
     w.y = this->y;
-    w.z = this->x * std::sin(radians) + this->z * std::cos(radians);
+    w.z = this->x * std::sin(amount.get()) + this->z * std::cos(amount.get());
     return w;
 }
 

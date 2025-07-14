@@ -1,5 +1,6 @@
 #pragma once
 
+#include "angle.hpp"
 #include "screen/screen.hpp"
 #include "vector/vec3.hpp"
 
@@ -7,9 +8,10 @@ class Camera {
 
 public:
     Vec3 pos;
-    Vec3 rot;
+    EulerAngle rot;
+    Angle hfov, vfov;
 
-    explicit Camera(Vec3 pos, Vec3 rot = Vec3(0.f, 0.f, 0.f));
+    Camera(Vec3 pos, EulerAngle rot, Angle hfov = Angle(0.f));
 
     void handle_input(float delta_time, Screen &screen);
 };
