@@ -179,6 +179,10 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
                         tri.vts[2] / tri.vs[2].z * bary_coords.z) *
                        z;
 
+    // flip around the y axis cuz the texture buffers will be assuming Y points
+    // down instead of up.
+    p_tex_coord.y = 1.f - p_tex_coord.y;
+
     Vec2i tx = Vec2i(p_tex_coord.x * tex.get_width(),
                      p_tex_coord.y * tex.get_height());
 
@@ -213,9 +217,8 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
-        /*
-        if (depth_buffer[idx] <= z)
-            continue;*/
+        // we're just doing depth-filling for now cuz the BSP already handles
+        // rendering everything correctly
         depth_buffer[idx] = z;
 
         auto texel_coord = get_tex_coords(tri, bary_coords, z, texs[0]);
