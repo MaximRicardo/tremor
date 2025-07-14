@@ -5,15 +5,15 @@
 #include <algorithm>
 #include <cmath>
 
-Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov)
-    : pos(pos), yaw(yaw), pitch(pitch), hfov(hfov),
-      vfov(FOV::horizontal_to_vertical(hfov))
+Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov, Angle max_pitch,
+               Angle min_pitch)
+    : pos(pos), yaw(yaw), pitch(pitch), max_pitch(max_pitch),
+      min_pitch(min_pitch), hfov(hfov), vfov(FOV::horizontal_to_vertical(hfov))
 {}
 
 void Camera::limit_rotation()
 {
-    this->pitch = std::clamp(this->pitch, Angle(-85.f, Angle::Type::DEGREES),
-                             Angle(85.f, Angle::Type::DEGREES));
+    this->pitch = std::clamp(this->pitch, this->min_pitch, this->max_pitch);
 
     this->yaw.set(std::fmod(this->yaw.get(Angle::Type::DEGREES), 360.f),
                   Angle::Type::DEGREES);
