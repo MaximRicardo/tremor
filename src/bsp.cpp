@@ -125,13 +125,14 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
 
 size_t BSP::n_triangles() const
 {
+    if (this->is_leaf())
+        return 0;
+
     // starts at 1 to include this node's triangle
     size_t count = 1;
 
-    if (this->behind)
-        count += this->behind->n_triangles();
-    if (this->in_front)
-        count += this->in_front->n_triangles();
+    count += this->behind->n_triangles();
+    count += this->in_front->n_triangles();
 
     return count;
 }
@@ -160,7 +161,6 @@ void BSP::create_leaf_nodes(ConvexHull hull)
     std::cout << "has innode info: " << (this->innode_info.get() != nullptr)
               << "\n";
     std::cout << hull.polys.size() << '\n';
-    std::cout << "n tris left " << this->n_triangles() << '\n';
 
     if (this->is_leaf() && !this->innode_info) {
         std::cout << "is leaf\n";
