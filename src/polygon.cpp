@@ -1,7 +1,25 @@
 #include "polygon.hpp"
 #include "plane.hpp"
-#include <iostream>
+#include <cassert>
 #include <iterator>
+
+namespace {
+
+void remove_duplicates(std::vector<Vec3> &points)
+{
+    for (size_t i = 0; i < points.size(); ++i) {
+        for (size_t j = 0; j < points.size(); ++j) {
+            if (i == j || points[i].dist(points[j]) > 0.001f)
+                continue;
+
+            points.erase(points.begin() + j--);
+            if (i > j)
+                --i;
+        }
+    }
+}
+
+} // namespace
 
 Polygon::Polygon(std::span<const Vec3> vs)
 {
@@ -10,6 +28,8 @@ Polygon::Polygon(std::span<const Vec3> vs)
 
 Plane Polygon::get_plane() const
 {
+    assert(this->vs.size() >= 2);
+
     Vec3 a = this->vs[1] - this->vs[0];
     Vec3 b = this->vs[2] - this->vs[0];
 
@@ -41,6 +61,7 @@ void Polygon::clip(const Plane &plane)
         prev_v = v;
     }
 
+    remove_duplicates(new_vs);
     this->vs = std::move(new_vs);
 }
 

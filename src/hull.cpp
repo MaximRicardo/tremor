@@ -110,9 +110,9 @@ void points_sorted_ctr_clockwise(std::span<Vec3> points, Vec3 normal)
     std::sort(points.begin(), points.end(),
               [normal, angle_basis](const auto &lhs, const auto &rhs) {
                   Angle lhs_angle =
-                      signed_angle_between(lhs, angle_basis, normal);
+                      signed_angle_between(angle_basis, lhs, normal);
                   Angle rhs_angle =
-                      signed_angle_between(rhs, angle_basis, normal);
+                      signed_angle_between(angle_basis, rhs, normal);
                   return lhs_angle > rhs_angle;
               });
 }
@@ -147,7 +147,8 @@ ConvexHull::ConvexHull()
 
 void ConvexHull::remove_empty_polys()
 {
-    std::erase_if(this->polys, [](Polygon &poly) { return poly.vs.empty(); });
+    std::erase_if(this->polys,
+                  [](Polygon &poly) { return poly.vs.size() < 3; });
 }
 
 void ConvexHull::clip(const Plane &plane)
