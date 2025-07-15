@@ -25,8 +25,9 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
-    auto tris = ObjLoader::load_file("../objs/sphere.obj");
+    auto tris = ObjLoader::load_file("../objs/cube.obj");
     BSP bsp(tris);
+    bsp.create_leaf_nodes();
 
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
 
@@ -45,6 +46,8 @@ int main()
         prev_time = Time::get_ticks_ms();
 
         std::cout << "delta_time = " << delta_time << '\n';
+        bool cam_in_solid = bsp.point_in_solid(cam.pos);
+        std::cout << "cam in solid = " << cam_in_solid << '\n';
 
         for (std::size_t i = 0; i < Res::size; i++) {
             frame[i] = Color(0, 0, 0);
@@ -61,4 +64,23 @@ int main()
 
         screen.update(frame.data());
     }
+
+    ConvexHull hull;
+    hull.clip(Plane(Vec3(0.f, 0.f, 1.f), 0.f));
+
+    std::cout << "n polys = " << hull.polys.size() << '\n';
+    std::cout << "correct winding = " << hull.verify_winding_order() << '\n';
+    std::cout << "center = {" << hull.get_center() << "}\n";
+    std::cout << "\n";
+    for (size_t i = 0; i < hull.polys.size(); ++i) {
+        for (size_t j = 0; j < hull.polys[i].vs.size(); ++j) {
+            std::cout << "poly[" << i << "].vs[" << j << "] = {"
+                      << hull.polys[i].vs[j] << "}\n";
+        }
+        std::cout << "normal = {" << hull.polys[i].get_plane().normal << "}\n";
+        std::cout << "d = " << hull.polys[i].get_plane().d << '\n';
+        std::cout << '\n';
+    }
+
+    return 0;
 }

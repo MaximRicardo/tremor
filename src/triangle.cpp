@@ -60,6 +60,8 @@ split_tri_with_near_plane(const Triangle &tri,
 
 } // namespace
 
+Triangle::Triangle() {};
+
 Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
                    size_t tex_idx)
     : vs(vs), vts(vts), tex_idx(tex_idx)

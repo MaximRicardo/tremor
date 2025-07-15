@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <tuple>
 
+Plane::Plane() {};
 Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
 
 namespace {
@@ -180,4 +181,9 @@ bool Plane::is_coplanar(const Plane &plane) const
 bool Plane::is_point_behind(const Vec3 &p) const
 {
     return this->normal.dot(p) < this->d;
+}
+
+Plane Plane::flipped() const
+{
+    return {-this->normal, -this->d};
 }

@@ -105,3 +105,15 @@ Vec2i Vec2i::operator/=(int x)
     *this = *this / x;
     return *this;
 }
+
+std::ostream &operator<<(std::ostream &os, const Vec2 &v)
+{
+    os << v.x << ", " << v.y;
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const Vec2i &v)
+{
+    os << v.x << ", " << v.y;
+    return os;
+}

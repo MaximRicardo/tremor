@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../angle.hpp"
+#include <ostream>
 
 class Vec3 {
 
@@ -32,4 +33,9 @@ public:
     float dist(const Vec3 &v) const;
     float length() const;
     Vec3 normalize() const;
+    Angle angle_between(const Vec3 &v) const;
+    // assumes the normal is normalized
+    Vec3 project(Vec3 normal) const;
 };
+
+std::ostream &operator<<(std::ostream &os, const Vec3 &v);

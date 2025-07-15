@@ -33,6 +33,8 @@ void read_idxs_line(VertexAttrib<Vec3> &v_coords,
         v_coords.idxs.push_back(idx);
 
         // there's probably a cleaner way to do this but this works
+        bool new_tex_coords = false;
+        bool new_normals = false;
         char c;
         size_t i = 0;
         while (stream >> c) {
@@ -43,13 +45,21 @@ void read_idxs_line(VertexAttrib<Vec3> &v_coords,
             size_t num;
             stream >> num;
 
-            if (i == 0)
+            if (i == 0) {
                 v_tex_coords.idxs.push_back(num);
-            else if (i == 1)
+                new_tex_coords = true;
+            } else if (i == 1) {
                 v_normals.idxs.push_back(num);
+                new_normals = true;
+            }
 
             ++i;
         }
+
+        if (!new_tex_coords)
+            v_tex_coords.idxs.push_back(0);
+        if (!new_normals)
+            v_normals.idxs.push_back(0);
     }
 }
 
@@ -80,7 +90,8 @@ std::vector<Triangle> convert_v_coords_to_tris(VertexAttrib<Vec3> v_coords,
 
         // we're only checking against the first vertex normal cuz that
         // SHOULD be good enough. i think.
-        match_normals(tri, v_normals.values[v_normals.idxs[i] - 1]);
+        if (v_normals.idxs[i] != 0)
+            match_normals(tri, v_normals.values[v_normals.idxs[i] - 1]);
 
         tris.push_back(tri);
     }

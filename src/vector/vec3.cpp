@@ -1,4 +1,5 @@
 #include "vec3.hpp"
+#include <cassert>
 #include <cmath>
 
 Vec3::Vec3() {}
@@ -138,4 +139,20 @@ float Vec3::length() const
 Vec3 Vec3::normalize() const
 {
     return *this / this->length();
+}
+
+Angle Vec3::angle_between(const Vec3 &v) const
+{
+    return Angle(std::acos(this->dot(v)));
+}
+
+Vec3 Vec3::project(Vec3 normal) const
+{
+    return *this - normal * this->dot(normal);
+}
+
+std::ostream &operator<<(std::ostream &os, const Vec3 &v)
+{
+    os << v.x << ", " << v.y << ", " << v.z;
+    return os;
 }

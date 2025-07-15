@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 class Vec2i;
 
 class Vec2 {
@@ -24,6 +25,8 @@ public:
     Vec2 mix(const Vec2 &v, float t) const;
 };
 
+std::ostream &operator<<(std::ostream &os, const Vec2 &v);
+
 class Vec2i {
 
 public:
@@ -42,3 +45,5 @@ public:
     Vec2i operator/(int x) const;
     Vec2i operator/=(int x);
 };
+
+std::ostream &operator<<(std::ostream &os, const Vec2i &v);

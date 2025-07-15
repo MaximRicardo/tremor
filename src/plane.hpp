@@ -12,6 +12,7 @@ public:
     Vec3 normal;
     float d;
 
+    Plane();
     Plane(Vec3 normal, float d);
 
     // retursn the intersection point and it's distance from start, relative to
@@ -31,4 +32,6 @@ public:
 
     bool is_coplanar(const Plane &plane) const;
     bool is_point_behind(const Vec3 &p) const;
+
+    Plane flipped() const;
 };
