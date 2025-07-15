@@ -5,11 +5,26 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <iterator>
 #include <numeric>
 #include <vector>
 
 namespace {
+
+void remove_duplicates(std::vector<Vec3> &points)
+{
+    for (size_t i = 0; i < points.size(); ++i) {
+        for (size_t j = 0; j < points.size(); ++j) {
+            if (i == j || points[i].dist(points[j]) > 0.001f)
+                continue;
+
+            points.erase(points.begin() + j--);
+            if (i > j)
+                --i;
+        }
+    }
+}
 
 // ASSUMES V AND W LIE ON A PLANE WITH THE GIVEN NORMAL VECTOR
 // the formula is from here:
@@ -138,7 +153,6 @@ void ConvexHull::remove_empty_polys()
 void ConvexHull::clip(const Plane &plane)
 {
     auto intersect_pts = this->plane_intersections(plane);
-    points_sorted_ctr_clockwise(intersect_pts, -plane.normal);
 
     for (auto &poly : this->polys) {
         poly.clip(plane);
@@ -148,7 +162,11 @@ void ConvexHull::clip(const Plane &plane)
     // and have it point away from the hull, like all the other polys.
     // this is made after the clipping portion cuz this poly doesn't need to be
     // clipped.
-    this->polys.emplace_back(intersect_pts);
+    if (!intersect_pts.empty()) {
+        remove_duplicates(intersect_pts);
+        points_sorted_ctr_clockwise(intersect_pts, -plane.normal);
+        this->polys.emplace_back(intersect_pts);
+    }
 
     this->remove_empty_polys();
 }
