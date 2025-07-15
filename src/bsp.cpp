@@ -143,17 +143,14 @@ bool BSP::is_leaf() const
 
 void BSP::alloc_leaf_nodes()
 {
-    std::cout << "alloc leaf nodes\n";
-
-    assert(this->is_leaf());
     assert(this->innode_info);
 
     // std::make_unique can't access the private BSP constructor, so gonna have
     // to use new
-    this->behind = std::unique_ptr<BSP>(new BSP(this));
-    this->in_front = std::unique_ptr<BSP>(new BSP(this));
-
-    std::cout << "done allocing leaves\n";
+    if (!this->behind)
+        this->behind = std::unique_ptr<BSP>(new BSP(this));
+    if (!this->in_front)
+        this->in_front = std::unique_ptr<BSP>(new BSP(this));
 }
 
 void BSP::create_leaf_nodes(ConvexHull hull)
@@ -173,9 +170,7 @@ void BSP::create_leaf_nodes(ConvexHull hull)
         // in front of their parents are always in empty space
         this->leaf_info->empty = this->parent->behind.get() != this;
     } else {
-        if (this->is_leaf()) {
-            alloc_leaf_nodes();
-        }
+        this->alloc_leaf_nodes();
 
         ConvexHull behind_hull(hull);
         std::cout << "clipping behind\n";
@@ -185,10 +180,8 @@ void BSP::create_leaf_nodes(ConvexHull hull)
         in_front_hull.clip(this->innode_info->plane);
         std::cout << "done clipping\n";
 
-        if (this->behind)
-            this->behind->create_leaf_nodes(behind_hull);
-        if (this->in_front)
-            this->in_front->create_leaf_nodes(in_front_hull);
+        this->behind->create_leaf_nodes(behind_hull);
+        this->in_front->create_leaf_nodes(in_front_hull);
     }
 
     std::cout << "exit\n";
