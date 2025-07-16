@@ -26,7 +26,7 @@ class BSP {
     std::unique_ptr<InNodeInfo> innode_info;
 
     void alloc_leaf_nodes();
-    void create_leaf_nodes(ConvexHull hull);
+    void create_leaf_nodes(const ConvexHull &hull);
 
     explicit BSP(BSP *parent);
 

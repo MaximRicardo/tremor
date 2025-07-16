@@ -66,7 +66,7 @@ int main()
     }
 
     ConvexHull hull;
-    hull.clip(Plane(Vec3(0.f, 1.f, 1.f).normalize(), 0.f));
+    hull.clip(Plane(Vec3(1.f, 1.f, 1.f).normalize(), 0.f));
 
     std::cout << "n polys = " << hull.polys.size() << '\n';
     std::cout << "correct winding = " << hull.verify_winding_order() << '\n';

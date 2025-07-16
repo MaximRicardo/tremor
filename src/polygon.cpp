@@ -5,6 +5,8 @@
 
 namespace {
 
+constexpr float split_plane_epsilon = 0.0001f;
+
 void remove_duplicates(std::vector<Vec3> &points)
 {
     for (size_t i = 0; i < points.size(); ++i) {
@@ -24,6 +26,7 @@ void remove_duplicates(std::vector<Vec3> &points)
 Polygon::Polygon(std::span<const Vec3> vs)
 {
     this->vs.assign(std::begin(vs), std::end(vs));
+    remove_duplicates(this->vs);
 }
 
 Plane Polygon::get_plane() const
@@ -39,8 +42,10 @@ Plane Polygon::get_plane() const
     return Plane(normal, d);
 }
 
-void Polygon::clip(const Plane &plane)
+void Polygon::clip(Plane plane)
 {
+    plane.d += split_plane_epsilon;
+
     std::vector<Vec3> new_vs;
     Vec3 prev_v = this->vs.back();
 
@@ -65,8 +70,10 @@ void Polygon::clip(const Plane &plane)
     this->vs = std::move(new_vs);
 }
 
-std::vector<Vec3> Polygon::plane_intersections(const Plane &plane) const
+std::vector<Vec3> Polygon::plane_intersections(Plane plane) const
 {
+    plane.d += split_plane_epsilon;
+
     std::vector<Vec3> points;
 
     Vec3 prev_v = this->vs.back();

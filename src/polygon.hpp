@@ -14,7 +14,7 @@ public:
     Polygon(std::span<const Vec3> vs);
 
     Plane get_plane() const;
-    void clip(const Plane &plane);
+    void clip(Plane plane);
     // the points at which the polygon intersects the plane
-    std::vector<Vec3> plane_intersections(const Plane &plane) const;
+    std::vector<Vec3> plane_intersections(Plane plane) const;
 };

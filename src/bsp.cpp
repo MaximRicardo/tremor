@@ -154,7 +154,7 @@ void BSP::alloc_leaf_nodes()
         this->in_front = std::unique_ptr<BSP>(new BSP(this));
 }
 
-void BSP::create_leaf_nodes(ConvexHull hull)
+void BSP::create_leaf_nodes(const ConvexHull &hull)
 {
     std::cout << "got here\n";
     std::cout << "is leaf node: " << this->is_leaf() << "\n";
@@ -212,7 +212,25 @@ const BSP *BSP::get_point_node(const Vec3 &point) const
 bool BSP::point_in_solid(const Vec3 &point) const
 {
     auto p_node = this->get_point_node(point);
-    if (!p_node)
-        return false;
+    const auto &hull = p_node->leaf_info->hull;
+
+    /*
+    std::cout << "player node hull:\n";
+    std::cout << "n polys = " << hull.polys.size() << '\n';
+    std::cout << "correct winding = " << hull.verify_winding_order() << '\n';
+    std::cout << "point inside = " << hull.is_point_inside(point) << '\n';
+    std::cout << "center = {" << hull.get_center() << "}\n";
+    for (size_t i = 0; i < hull.polys.size(); ++i) {
+        for (size_t j = 0; j < hull.polys[i].vs.size(); ++j) {
+            std::cout << "poly[" << i << "].vs[" << j << "] = {"
+                      << hull.polys[i].vs[j] << "}\n";
+        }
+        std::cout << "normal = {" << hull.polys[i].get_plane().normal << "}\n";
+        std::cout << "d = " << hull.polys[i].get_plane().d << '\n';
+        std::cout << '\n';
+    }
+    */
+    std::cout << "point inside = " << hull.is_point_inside(point) << '\n';
+
     return !p_node->leaf_info->empty;
 }

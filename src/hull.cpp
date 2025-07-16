@@ -12,20 +12,6 @@
 
 namespace {
 
-void remove_duplicates(std::vector<Vec3> &points)
-{
-    for (size_t i = 0; i < points.size(); ++i) {
-        for (size_t j = 0; j < points.size(); ++j) {
-            if (i == j || points[i].dist(points[j]) > 0.001f)
-                continue;
-
-            points.erase(points.begin() + j--);
-            if (i > j)
-                --i;
-        }
-    }
-}
-
 // ASSUMES V AND W LIE ON A PLANE WITH THE GIVEN NORMAL VECTOR
 // the formula is from here:
 // https://stackoverflow.com/questions/14066933/direct-way-of-computing-the-clockwise-angle-between-two-vectors,
@@ -164,7 +150,6 @@ void ConvexHull::clip(const Plane &plane)
     // this is made after the clipping portion cuz this poly doesn't need to be
     // clipped.
     if (!intersect_pts.empty()) {
-        remove_duplicates(intersect_pts);
         points_sorted_ctr_clockwise(intersect_pts, -plane.normal);
         this->polys.emplace_back(intersect_pts);
     }
