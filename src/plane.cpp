@@ -172,10 +172,8 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
 bool Plane::is_coplanar(const Plane &plane) const
 {
     using namespace std;
-    return abs(abs(this->normal.x) - abs(plane.normal.x)) < 0.01f &&
-           abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
-           abs(abs(this->normal.y) - abs(plane.normal.y)) < 0.01f &&
-           abs(abs(this->d) - abs(plane.d)) < 0.01f;
+    return this->normal.dot(plane.normal) > 0.99f &&
+           std::abs(this->d - plane.d) < 0.01f;
 }
 
 bool Plane::is_point_behind(const Vec3 &p) const

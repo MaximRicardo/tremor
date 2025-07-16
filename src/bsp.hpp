@@ -5,6 +5,7 @@
 #include "triangle.hpp"
 #include <memory>
 #include <span>
+#include <vector>
 
 class BSP {
 
@@ -18,7 +19,8 @@ class BSP {
     };
 
     struct InNodeInfo {
-        Triangle tri;
+        // every tri in this vector is coplanar
+        std::vector<Triangle> tris;
         Plane plane;
     };
 

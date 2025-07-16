@@ -16,7 +16,7 @@ BSP::BSP(BSP *parent) : parent(parent) {}
 BSP::BSP(Triangle node_tri, BSP *parent)
     : innode_info(new InNodeInfo), parent(parent)
 {
-    this->innode_info->tri = node_tri;
+    this->innode_info->tris.push_back(node_tri);
     this->innode_info->plane = node_tri.get_plane();
 }
 
@@ -26,7 +26,7 @@ BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
         return;
 
     this->innode_info = std::make_unique<InNodeInfo>();
-    this->innode_info->tri = tris[0];
+    this->innode_info->tris.push_back(tris[0]);
     this->innode_info->plane = tris[0].get_plane();
 
     std::vector<Triangle> other_tris;
@@ -81,10 +81,7 @@ void BSP::insert_tris_in_front(const Triangle &tri)
 void BSP::insert(const Triangle &tri)
 {
     if (this->innode_info->plane.is_coplanar(tri.get_plane())) {
-        if (!this->behind)
-            this->behind = std::make_unique<BSP>(tri, this);
-        else
-            this->behind->insert(tri);
+        this->innode_info->tris.push_back(tri);
     } else {
         this->insert_tris_behind(tri);
         this->insert_tris_in_front(tri);
@@ -116,8 +113,11 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (first)
         first->render(frame, depth_buffer, cam, texs);
 
-    if (cam_in_front)
-        this->innode_info->tri.render(frame, depth_buffer, cam, texs);
+    if (cam_in_front) {
+        for (const auto &tri : this->innode_info->tris) {
+            tri.render(frame, depth_buffer, cam, texs);
+        }
+    }
 
     if (last)
         last->render(frame, depth_buffer, cam, texs);
@@ -128,8 +128,7 @@ size_t BSP::n_triangles() const
     if (this->is_leaf())
         return 0;
 
-    // starts at 1 to include this node's triangle
-    size_t count = 1;
+    size_t count = this->innode_info->tris.size();
 
     count += this->behind->n_triangles();
     count += this->in_front->n_triangles();
