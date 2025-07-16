@@ -179,6 +179,11 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
                         tri.vts[2] / tri.vs[2].z * bary_coords.z) *
                        z;
 
+    if (std::isnan(p_tex_coord.x))
+        p_tex_coord.x = 0.f;
+    if (std::isnan(p_tex_coord.y))
+        p_tex_coord.y = 0.f;
+
     // flip around the y axis cuz the texture buffers will be assuming Y points
     // down instead of up.
     p_tex_coord.y = 1.f - p_tex_coord.y;
