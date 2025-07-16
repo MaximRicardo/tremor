@@ -30,6 +30,7 @@ int main()
     bsp.create_leaf_nodes();
 
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
+    std::cout << "bsp max depth is " << bsp.max_depth() << "\n";
 
     std::vector<Texture> texs;
     texs.emplace_back("../textures/img.png");
@@ -63,23 +64,6 @@ int main()
         bsp.render(frame, depth_buffer, cam, texs);
 
         screen.update(frame.data());
-    }
-
-    ConvexHull hull;
-    hull.clip(Plane(Vec3(1.f, 1.f, 1.f).normalize(), 0.f));
-
-    std::cout << "n polys = " << hull.polys.size() << '\n';
-    std::cout << "correct winding = " << hull.verify_winding_order() << '\n';
-    std::cout << "center = {" << hull.get_center() << "}\n";
-    std::cout << "\n";
-    for (size_t i = 0; i < hull.polys.size(); ++i) {
-        for (size_t j = 0; j < hull.polys[i].vs.size(); ++j) {
-            std::cout << "poly[" << i << "].vs[" << j << "] = {"
-                      << hull.polys[i].vs[j] << "}\n";
-        }
-        std::cout << "normal = {" << hull.polys[i].get_plane().normal << "}\n";
-        std::cout << "d = " << hull.polys[i].get_plane().d << '\n';
-        std::cout << '\n';
     }
 
     return 0;

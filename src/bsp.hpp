@@ -1,6 +1,5 @@
 #pragma once
 
-#include "hull.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <memory>
@@ -15,7 +14,6 @@ class BSP {
     struct LeafInfo {
         // is the current node in empty space or solid space?
         bool empty;
-        ConvexHull hull;
     };
 
     struct InNodeInfo {
@@ -28,7 +26,7 @@ class BSP {
     std::unique_ptr<InNodeInfo> innode_info;
 
     void alloc_leaf_nodes();
-    void create_leaf_nodes(const ConvexHull &hull);
+    void create_leaf_nodes(int ignore);
 
     explicit BSP(BSP *parent);
 
@@ -50,6 +48,7 @@ public:
     void render(std::span<Color> frame, std::span<float> depth_buffer,
                 const Camera &cam, std::span<const Texture> texs) const;
     size_t n_triangles() const;
+    size_t max_depth() const;
     bool is_leaf() const;
     // get the leaf node a point is in
     const BSP *get_point_node(const Vec3 &point) const;

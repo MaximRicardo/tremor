@@ -1,8 +1,7 @@
 #include "bsp.hpp"
-#include "hull.hpp"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 
 namespace {
@@ -41,7 +40,7 @@ BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
 void BSP::insert_tris_behind(const Triangle &tri)
 {
     auto tris_behind = Plane(-this->innode_info->plane.normal,
-                             -this->innode_info->plane.d - split_plane_epsilon)
+                             -this->innode_info->plane.d + split_plane_epsilon)
                            .clip(tri);
 
     if (tris_behind.n_tris == 0)
@@ -61,7 +60,7 @@ void BSP::insert_tris_behind(const Triangle &tri)
 void BSP::insert_tris_in_front(const Triangle &tri)
 {
     auto tris_in_front = Plane(this->innode_info->plane.normal,
-                               this->innode_info->plane.d - split_plane_epsilon)
+                               this->innode_info->plane.d + split_plane_epsilon)
                              .clip(tri);
 
     if (tris_in_front.n_tris == 0)
@@ -136,6 +135,14 @@ size_t BSP::n_triangles() const
     return count;
 }
 
+size_t BSP::max_depth() const
+{
+    if (this->is_leaf())
+        return 1;
+
+    return 1 + std::max(this->behind->max_depth(), this->in_front->max_depth());
+}
+
 bool BSP::is_leaf() const
 {
     return !this->in_front && !this->behind;
@@ -153,50 +160,30 @@ void BSP::alloc_leaf_nodes()
         this->in_front = std::unique_ptr<BSP>(new BSP(this));
 }
 
-void BSP::create_leaf_nodes(const ConvexHull &hull)
+void BSP::create_leaf_nodes(int)
 {
-    std::cout << "got here\n";
-    std::cout << "is leaf node: " << this->is_leaf() << "\n";
-    std::cout << "has innode info: " << (this->innode_info.get() != nullptr)
-              << "\n";
-    std::cout << hull.polys.size() << '\n';
-
     if (this->is_leaf() && !this->innode_info) {
-        std::cout << "is leaf\n";
         this->leaf_info = std::make_unique<LeafInfo>();
-        this->leaf_info->hull = hull;
         // leaf nodes behind their parent are always in solid space, while ones
         // in front of their parents are always in empty space
         this->leaf_info->empty = this->parent->behind.get() != this;
     } else {
         this->alloc_leaf_nodes();
 
-        ConvexHull behind_hull(hull);
-        std::cout << "clipping behind\n";
-        behind_hull.clip(this->innode_info->plane.flipped());
-        ConvexHull in_front_hull(hull);
-        std::cout << "clipping in front\n";
-        in_front_hull.clip(this->innode_info->plane);
-        std::cout << "done clipping\n";
-
-        this->behind->create_leaf_nodes(behind_hull);
-        this->in_front->create_leaf_nodes(in_front_hull);
+        this->behind->create_leaf_nodes(0);
+        this->in_front->create_leaf_nodes(0);
     }
-
-    std::cout << "exit\n";
 }
 
 void BSP::create_leaf_nodes()
 {
-    this->create_leaf_nodes(ConvexHull());
+    this->create_leaf_nodes(0);
 }
 
 const BSP *BSP::get_point_node(const Vec3 &point) const
 {
     if (this->is_leaf()) {
         assert(this->leaf_info);
-        // assert(this->leaf_info->hull.is_point_inside(point));
-        std::cout << "n polys = " << this->leaf_info->hull.polys.size() << '\n';
         return this;
     } else {
         auto &node = this->innode_info->plane.is_point_behind(point)
@@ -211,25 +198,6 @@ const BSP *BSP::get_point_node(const Vec3 &point) const
 bool BSP::point_in_solid(const Vec3 &point) const
 {
     auto p_node = this->get_point_node(point);
-    const auto &hull = p_node->leaf_info->hull;
-
-    /*
-    std::cout << "player node hull:\n";
-    std::cout << "n polys = " << hull.polys.size() << '\n';
-    std::cout << "correct winding = " << hull.verify_winding_order() << '\n';
-    std::cout << "point inside = " << hull.is_point_inside(point) << '\n';
-    std::cout << "center = {" << hull.get_center() << "}\n";
-    for (size_t i = 0; i < hull.polys.size(); ++i) {
-        for (size_t j = 0; j < hull.polys[i].vs.size(); ++j) {
-            std::cout << "poly[" << i << "].vs[" << j << "] = {"
-                      << hull.polys[i].vs[j] << "}\n";
-        }
-        std::cout << "normal = {" << hull.polys[i].get_plane().normal << "}\n";
-        std::cout << "d = " << hull.polys[i].get_plane().d << '\n';
-        std::cout << '\n';
-    }
-    */
-    std::cout << "point inside = " << hull.is_point_inside(point) << '\n';
 
     return !p_node->leaf_info->empty;
 }
