@@ -231,7 +231,6 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
         size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width());
 
         frame[idx] = tex.get_pixels()[texel];
-        frame[idx] = Color(255, 0, 0);
     }
 }
 
