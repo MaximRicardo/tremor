@@ -107,10 +107,12 @@ Triangle split_tri_2_in_front_1(const Plane &plane, const Triangle &tri,
     return sub_tri;
 }
 
-std::array<Triangle, 2> split_tri_with_plane(
-    const Plane &plane, const Triangle &tri,
-    const std::array<size_t, 3> &vs_in_front, unsigned n_in_front,
-    const std::array<size_t, 3> &vs_behind, unsigned &n_sub_tris)
+std::array<Triangle, 2>
+split_tri_with_plane(const Plane &plane, const Triangle &tri,
+                     const std::array<size_t, 3> &vs_in_front,
+                     unsigned n_in_front,
+                     const std::array<size_t, 3> &vs_behind, unsigned n_behind,
+                     unsigned &n_sub_tris)
 {
     assert(n_in_front + n_behind == 3);
 
@@ -171,7 +173,7 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
 
     struct Plane::ClipTriangleRet ret;
     ret.tris = split_tri_with_plane(*this, tri, vs_in_front, n_in_front,
-                                    vs_behind, ret.n_tris);
+                                    vs_behind, n_behind, ret.n_tris);
 
     return ret;
 }
