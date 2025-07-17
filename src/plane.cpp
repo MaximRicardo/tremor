@@ -137,12 +137,20 @@ split_tri_with_plane(const Plane &plane, const Triangle &tri,
 
 } // namespace
 
+bool Plane::does_line_intersect(const Vec3 &start, const Vec3 &end) const
+{
+    return this->is_point_behind(start) != this->is_point_behind(end);
+}
+
 std::tuple<Vec3, float> Plane::line_intersect_point(const Vec3 &start,
                                                     const Vec3 &end) const
 {
+    // finds the distance of the intersection point along the line using d
+    // values
     float ad = start.dot(this->normal);
     float bd = end.dot(this->normal);
     float t = (this->d - ad) / (bd - ad);
+
     Vec3 line_start_to_end = end - start;
     Vec3 line_to_intersect = line_start_to_end * t;
     return std::make_tuple(start + line_to_intersect, t);

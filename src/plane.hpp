@@ -15,8 +15,10 @@ public:
     Plane();
     Plane(Vec3 normal, float d);
 
-    // retursn the intersection point and it's distance from start, relative to
+    bool does_line_intersect(const Vec3 &start, const Vec3 &end) const;
+    // returns the intersection point and it's distance from start, relative to
     // the distance between start and end.
+    // ASSUMES THE LINE ACTUALLY INTERSECTS!
     std::tuple<Vec3, float> line_intersect_point(const Vec3 &start,
                                                  const Vec3 &end) const;
 

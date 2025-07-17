@@ -1,7 +1,9 @@
 #include "bsp.hpp"
+#include "constants.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <memory>
 
 namespace {
@@ -160,24 +162,40 @@ void BSP::alloc_leaf_nodes()
         this->in_front = std::unique_ptr<BSP>(new BSP(this));
 }
 
-void BSP::create_leaf_nodes(int)
+void BSP::init_leaf_node(const AABB &cur_box)
+{
+    this->leaf_info = std::make_unique<LeafInfo>();
+
+    // leaf nodes behind their parent are always in solid space, while ones
+    // in front of their parents are always in empty space
+    this->leaf_info->empty = this->parent->behind.get() != this;
+
+    this->leaf_info->b_box = cur_box;
+}
+
+void BSP::create_leaf_nodes(const AABB &cur_box)
 {
     if (this->is_leaf() && !this->innode_info) {
-        this->leaf_info = std::make_unique<LeafInfo>();
-        // leaf nodes behind their parent are always in solid space, while ones
-        // in front of their parents are always in empty space
-        this->leaf_info->empty = this->parent->behind.get() != this;
+        this->init_leaf_node(cur_box);
     } else {
         this->alloc_leaf_nodes();
 
-        this->behind->create_leaf_nodes(0);
-        this->in_front->create_leaf_nodes(0);
+        AABB behind_box = cur_box;
+        behind_box.clip(this->innode_info->plane.flipped());
+        AABB in_front_box = cur_box;
+        in_front_box.clip(this->innode_info->plane);
+        this->behind->create_leaf_nodes(behind_box);
+        this->in_front->create_leaf_nodes(in_front_box);
     }
 }
 
 void BSP::create_leaf_nodes()
 {
-    this->create_leaf_nodes(0);
+    this->create_leaf_nodes(AABB(
+        Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
+             Consts::map_bounding_box_min_z),
+        Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
+             Consts::map_bounding_box_max_z)));
 }
 
 const BSP *BSP::get_point_node(const Vec3 &point) const
@@ -199,5 +217,10 @@ bool BSP::point_in_solid(const Vec3 &point) const
 {
     auto p_node = this->get_point_node(point);
 
+    std::cout << "point = (" << point << ")\n";
+    std::cout << "min = (" << p_node->leaf_info->b_box.min << ")\n";
+    std::cout << "max = (" << p_node->leaf_info->b_box.max << ")\n";
+    std::cout << "point inside = "
+              << p_node->leaf_info->b_box.is_point_inside(point) << "\n";
     return !p_node->leaf_info->empty;
 }

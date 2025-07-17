@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aabb.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <memory>
@@ -14,6 +15,7 @@ class BSP {
     struct LeafInfo {
         // is the current node in empty space or solid space?
         bool empty;
+        AABB b_box;
     };
 
     struct InNodeInfo {
@@ -27,7 +29,8 @@ class BSP {
     std::unique_ptr<InNodeInfo> innode_info;
 
     void alloc_leaf_nodes();
-    void create_leaf_nodes(int ignore);
+    void init_leaf_node(const AABB &cur_box);
+    void create_leaf_nodes(const AABB &cur_box);
 
     explicit BSP(BSP *parent);
 
