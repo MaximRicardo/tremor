@@ -46,28 +46,6 @@ bool Frustum::contains(const Vec3 &p) const
     return true;
 }
 
-// function from https://iquilezles.org/articles/frustumcorrect/
-/*
-bool Frustum::b_box_partially_inside(const AABB &box) const
-{
-    assert(this->planes.size() == 6);
-
-    for (const auto &plane : this->planes) {
-        int out = 0;
-
-        auto vs = box.get_vertices();
-        for (const auto &v : vs) {
-            out += plane.normal.dot(v) < plane.d;
-        }
-
-        if (out == 8)
-            return false;
-    }
-
-    return true;
-}
-*/
-
 bool Frustum::b_box_maybe_inside(const AABB &box) const
 {
     for (const auto &plane : this->planes) {

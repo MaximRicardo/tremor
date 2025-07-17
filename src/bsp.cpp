@@ -143,9 +143,11 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (this->is_leaf())
         return;
 
+    /*
     if (!cam.get_frustum().b_box_maybe_inside(this->b_box)) {
         return;
     }
+    */
 
     bool cam_in_front = !this->innode_info().plane.is_point_behind(cam.pos);
 
