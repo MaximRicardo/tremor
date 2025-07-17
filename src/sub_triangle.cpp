@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <iostream>
 #include <limits>
 #include <memory>
 
@@ -157,8 +158,8 @@ Vec3 get_barycentric_coords(Vec2 p, Vec2 a, Vec2 b, Vec2 c)
     float denom = d00 * d11 - d01 * d01;
 
     Vec3 ret;
-    ret.y = (d11 * d20 - d01 * d21) / denom;
-    ret.z = (d00 * d21 - d01 * d20) / denom;
+    ret.y = (d11 * d20 - d01 * d21) / (denom + 0.001f);
+    ret.z = (d00 * d21 - d01 * d20) / (denom + 0.001f);
     ret.x = 1.f - ret.y - ret.z;
 
     return ret;
@@ -175,6 +176,10 @@ float interpolate_z(const SubTriangle &tri, const Vec3 &bary_coords)
 Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
                      const Texture &tex)
 {
+    assert(tri.vs[0].z != 0.f);
+    assert(tri.vs[1].z != 0.f);
+    assert(tri.vs[2].z != 0.f);
+
     Vec2 p_tex_coord = (tri.vts[0] / tri.vs[0].z * bary_coords.x +
                         tri.vts[1] / tri.vs[1].z * bary_coords.y +
                         tri.vts[2] / tri.vs[2].z * bary_coords.z) *
