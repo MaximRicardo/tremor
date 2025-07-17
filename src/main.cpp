@@ -25,7 +25,7 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
-    auto tris = ObjLoader::load_file("../objs/cube.obj");
+    auto tris = ObjLoader::load_file("../objs/sphere.obj");
     BSP bsp(tris);
     bsp.create_leaf_nodes();
 

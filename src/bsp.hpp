@@ -19,6 +19,7 @@ class BSP {
     struct InNodeInfo {
         // every tri in this vector is coplanar
         std::vector<Triangle> tris;
+        // plane of the first tri in tris
         Plane plane;
     };
 
