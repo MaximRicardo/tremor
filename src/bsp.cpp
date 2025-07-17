@@ -105,8 +105,9 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (this->is_leaf())
         return;
 
-    if (!cam.get_frustum().b_box_partially_inside(this->b_box))
+    if (!cam.get_frustum().b_box_partially_inside(this->b_box)) {
         return;
+    }
 
     bool cam_in_front = !this->innode_info->plane.is_point_behind(cam.pos);
 
@@ -228,7 +229,6 @@ bool BSP::point_in_solid(const Vec3 &point) const
     std::cout << "point = (" << point << ")\n";
     std::cout << "min = (" << p_node.b_box.min << ")\n";
     std::cout << "max = (" << p_node.b_box.max << ")\n";
-    std::cout << "point inside = " << p_node.b_box.is_point_inside(point)
-              << "\n";
+    std::cout << "point inside = " << p_node.b_box.contains(point) << "\n";
     return !p_node.leaf_info->empty;
 }

@@ -15,8 +15,10 @@ public:
     AABB();
     AABB(Vec3 min, Vec3 max);
 
-    bool is_point_inside(const Vec3 &p) const;
+    bool contains(const Vec3 &p) const;
+    bool contains(const AABB &box) const;
     void clip(const Plane &plane);
     bool intersects(const Plane &plane) const;
+    std::vector<Vec3> intersection_points(const Plane &plane) const;
     std::array<Vec3, 8> get_vertices() const;
 };

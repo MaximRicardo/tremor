@@ -13,6 +13,7 @@ public:
     float d;
 
     Plane();
+    // DOES NOT AUTOMATICALLY NORMALIZE THE NORMAL
     Plane(Vec3 normal, float d);
     // p is a point on the plane
     Plane(Vec3 normal, Vec3 p);

@@ -6,8 +6,6 @@
 
 class Frustum {
 
-    bool b_box_has_vertex_inside(const AABB &box) const;
-
 public:
     static constexpr size_t near_face = 0;
     static constexpr size_t far_face = 1;
@@ -22,9 +20,11 @@ public:
 
     explicit Frustum(std::span<const Plane, n_faces> planes);
 
-    bool b_box_intersects(const AABB &box) const;
+    Vec3 forward_vec() const;
+    Vec3 right_vec() const;
+    Vec3 up_vec() const;
 
-    bool point_inside(const Vec3 &p) const;
+    bool contains(const Vec3 &p) const;
     // also returns true if the box is entirely inside
     bool b_box_partially_inside(const AABB &box) const;
 };

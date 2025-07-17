@@ -1,16 +1,27 @@
 #include "aabb.hpp"
 #include <algorithm>
 #include <array>
+#include <cassert>
+#include <iostream>
 
 AABB::AABB() {};
 AABB::AABB(Vec3 min, Vec3 max) : min(min), max(max) {}
 
-bool AABB::is_point_inside(const Vec3 &p) const
+bool AABB::contains(const Vec3 &p) const
 {
     bool x_inside = min.x <= p.x && p.x <= max.x;
     bool y_inside = min.y <= p.y && p.y <= max.y;
     bool z_inside = min.z <= p.z && p.z <= max.z;
     return x_inside && y_inside && z_inside;
+}
+
+bool AABB::contains(const AABB &box) const
+{
+    std::cout << "self min = (" << this->min << "), self max = (" << this->max
+              << ")\n";
+    std::cout << "other min = (" << box.min << "), other max = (" << box.max
+              << ")\n";
+    return this->contains(box.min) && this->contains(box.max);
 }
 
 std::array<Vec3, 8> AABB::get_vertices() const
@@ -75,13 +86,22 @@ void AABB::clip(const Plane &plane)
 
 bool AABB::intersects(const Plane &plane) const
 {
+    return !this->intersection_points(plane).empty();
+}
+
+std::vector<Vec3> AABB::intersection_points(const Plane &plane) const
+{
     auto vs = this->get_vertices();
 
-    Vec3 prev_v;
+    std::vector<Vec3> intersections;
+    Vec3 prev_v = vs.back();
     for (const auto &v : vs) {
         if (plane.does_line_intersect(prev_v, v))
-            return true;
+            intersections.push_back(
+                std::get<0>(plane.line_intersect_point(prev_v, v)));
+
+        prev_v = v;
     }
 
-    return false;
+    return intersections;
 }
