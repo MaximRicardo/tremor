@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <variant>
 
 namespace {
 
@@ -16,11 +17,12 @@ constexpr float split_plane_epsilon = 0.0001f;
 
 BSP::BSP(BSP *parent) : parent(parent) {}
 
-BSP::BSP(Triangle node_tri, BSP *parent)
-    : innode_info(new InNodeInfo), parent(parent)
+BSP::BSP(Triangle node_tri, BSP *parent) : parent(parent)
 {
-    this->innode_info->tris.push_back(node_tri);
-    this->innode_info->plane = node_tri.get_plane();
+    this->info = std::make_unique<InNodeInfo>();
+
+    this->innode_info().tris.push_back(node_tri);
+    this->innode_info().plane = node_tri.get_plane();
 }
 
 BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
@@ -28,9 +30,10 @@ BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
     if (tris.size() == 0)
         return;
 
-    this->innode_info = std::make_unique<InNodeInfo>();
-    this->innode_info->tris.push_back(tris[0]);
-    this->innode_info->plane = tris[0].get_plane();
+    this->info = std::make_unique<InNodeInfo>();
+
+    this->innode_info().tris.push_back(tris[0]);
+    this->innode_info().plane = tris[0].get_plane();
 
     std::vector<Triangle> other_tris;
     other_tris.reserve(tris.size() - 1);
@@ -41,11 +44,45 @@ BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
     this->insert(other_tris);
 }
 
+bool BSP::has_innode_info() const
+{
+    return std::holds_alternative<std::unique_ptr<InNodeInfo>>(this->info);
+}
+
+bool BSP::has_leaf_info() const
+{
+    return std::holds_alternative<std::unique_ptr<LeafInfo>>(this->info);
+}
+
+const BSP::InNodeInfo &BSP::innode_info() const
+{
+    assert(this->has_innode_info());
+    return *std::get<std::unique_ptr<InNodeInfo>>(this->info);
+}
+
+BSP::InNodeInfo &BSP::innode_info()
+{
+    return const_cast<BSP::InNodeInfo &>(std::as_const(*this).innode_info());
+}
+
+const BSP::LeafInfo &BSP::leaf_info() const
+{
+    assert(this->has_leaf_info());
+    return *std::get<std::unique_ptr<LeafInfo>>(this->info);
+}
+
+BSP::LeafInfo &BSP::leaf_info()
+{
+    return const_cast<LeafInfo &>(std::as_const(*this).leaf_info());
+}
+
 void BSP::insert_tris_behind(const Triangle &tri)
 {
-    auto tris_behind = Plane(-this->innode_info->plane.normal,
-                             -this->innode_info->plane.d + split_plane_epsilon)
-                           .clip(tri);
+    auto &info = this->innode_info();
+
+    auto tris_behind =
+        Plane(-info.plane.normal, -info.plane.d + split_plane_epsilon)
+            .clip(tri);
 
     if (tris_behind.n_tris == 0)
         return;
@@ -63,9 +100,10 @@ void BSP::insert_tris_behind(const Triangle &tri)
 
 void BSP::insert_tris_in_front(const Triangle &tri)
 {
-    auto tris_in_front = Plane(this->innode_info->plane.normal,
-                               this->innode_info->plane.d + split_plane_epsilon)
-                             .clip(tri);
+    auto tris_in_front =
+        Plane(this->innode_info().plane.normal,
+              this->innode_info().plane.d + split_plane_epsilon)
+            .clip(tri);
 
     if (tris_in_front.n_tris == 0)
         return;
@@ -83,8 +121,8 @@ void BSP::insert_tris_in_front(const Triangle &tri)
 
 void BSP::insert(const Triangle &tri)
 {
-    if (this->innode_info->plane.is_coplanar(tri.get_plane())) {
-        this->innode_info->tris.push_back(tri);
+    if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
+        this->innode_info().tris.push_back(tri);
     } else {
         this->insert_tris_behind(tri);
         this->insert_tris_in_front(tri);
@@ -109,7 +147,7 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
         return;
     }
 
-    bool cam_in_front = !this->innode_info->plane.is_point_behind(cam.pos);
+    bool cam_in_front = !this->innode_info().plane.is_point_behind(cam.pos);
 
     // since we wanna render everything back to front, we gotta flip around
     // behind and in front depending on whether the camera's definition of in
@@ -121,7 +159,7 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
         first->render(frame, depth_buffer, cam, texs);
 
     if (cam_in_front) {
-        for (const auto &tri : this->innode_info->tris) {
+        for (const auto &tri : this->innode_info().tris) {
             tri.render(frame, depth_buffer, cam, texs);
         }
     }
@@ -135,7 +173,7 @@ size_t BSP::n_triangles() const
     if (this->is_leaf())
         return 0;
 
-    size_t count = this->innode_info->tris.size();
+    size_t count = this->innode_info().tris.size();
 
     count += this->behind->n_triangles();
     count += this->in_front->n_triangles();
@@ -158,7 +196,7 @@ bool BSP::is_leaf() const
 
 void BSP::alloc_leaf_nodes()
 {
-    assert(this->innode_info);
+    assert(this->has_innode_info());
 
     // std::make_unique can't access the private BSP constructor, so gonna have
     // to use new
@@ -170,26 +208,26 @@ void BSP::alloc_leaf_nodes()
 
 void BSP::init_leaf_node()
 {
-    this->leaf_info = std::make_unique<LeafInfo>();
+    this->info = std::make_unique<LeafInfo>();
 
     // leaf nodes behind their parent are always in solid space, while ones
     // in front of their parents are always in empty space
-    this->leaf_info->empty = this->parent->behind.get() != this;
+    this->leaf_info().empty = this->parent->behind.get() != this;
 }
 
 void BSP::create_leaf_nodes(const AABB &cur_box)
 {
     this->b_box = cur_box;
 
-    if (this->is_leaf() && !this->innode_info) {
+    if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node();
     } else {
         this->alloc_leaf_nodes();
 
         AABB behind_box = cur_box;
-        behind_box.clip(this->innode_info->plane.flipped());
+        behind_box.clip(this->innode_info().plane.flipped());
         AABB in_front_box = cur_box;
-        in_front_box.clip(this->innode_info->plane);
+        in_front_box.clip(this->innode_info().plane);
         this->behind->create_leaf_nodes(behind_box);
         this->in_front->create_leaf_nodes(in_front_box);
     }
@@ -207,10 +245,10 @@ void BSP::create_leaf_nodes()
 const BSP &BSP::get_point_node(const Vec3 &point) const
 {
     if (this->is_leaf()) {
-        assert(this->leaf_info);
+        assert(this->has_leaf_info());
         return *this;
     } else {
-        auto &node = this->innode_info->plane.is_point_behind(point)
+        auto &node = this->innode_info().plane.is_point_behind(point)
                          ? this->behind
                          : this->in_front;
         return node->get_point_node(point);
@@ -230,5 +268,5 @@ bool BSP::point_in_solid(const Vec3 &point) const
     std::cout << "min = (" << p_node.b_box.min << ")\n";
     std::cout << "max = (" << p_node.b_box.max << ")\n";
     std::cout << "point inside = " << p_node.b_box.contains(point) << "\n";
-    return !p_node.leaf_info->empty;
+    return !p_node.leaf_info().empty;
 }

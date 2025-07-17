@@ -5,6 +5,7 @@
 #include "triangle.hpp"
 #include <memory>
 #include <span>
+#include <variant>
 #include <vector>
 
 class BSP {
@@ -23,8 +24,15 @@ class BSP {
 
     AABB b_box;
 
-    std::unique_ptr<LeafInfo> leaf_info;
-    std::unique_ptr<InNodeInfo> innode_info;
+    std::variant<std::unique_ptr<LeafInfo>, std::unique_ptr<InNodeInfo>> info;
+
+    bool has_innode_info() const;
+    bool has_leaf_info() const;
+
+    const InNodeInfo &innode_info() const;
+    InNodeInfo &innode_info();
+    const LeafInfo &leaf_info() const;
+    LeafInfo &leaf_info();
 
     void alloc_leaf_nodes();
     void init_leaf_node();
