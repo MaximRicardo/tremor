@@ -1,6 +1,7 @@
 #pragma once
 
 #include "angle.hpp"
+#include "frustum.hpp"
 #include "screen/screen.hpp"
 #include "vector/vec3.hpp"
 
@@ -33,4 +34,6 @@ public:
     Vec3 move_forward_vec() const;
     Vec3 move_right_vec() const;
     Vec3 move_up_vec() const;
+
+    Frustum get_frustum() const;
 };

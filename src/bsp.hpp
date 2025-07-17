@@ -9,13 +9,9 @@
 
 class BSP {
 
-    void insert_tris_behind(const Triangle &tri);
-    void insert_tris_in_front(const Triangle &tri);
-
     struct LeafInfo {
         // is the current node in empty space or solid space?
         bool empty;
-        AABB b_box;
     };
 
     struct InNodeInfo {
@@ -25,12 +21,17 @@ class BSP {
         Plane plane;
     };
 
+    AABB b_box;
+
     std::unique_ptr<LeafInfo> leaf_info;
     std::unique_ptr<InNodeInfo> innode_info;
 
     void alloc_leaf_nodes();
-    void init_leaf_node(const AABB &cur_box);
+    void init_leaf_node();
     void create_leaf_nodes(const AABB &cur_box);
+
+    void insert_tris_behind(const Triangle &tri);
+    void insert_tris_in_front(const Triangle &tri);
 
     explicit BSP(BSP *parent);
 
@@ -55,6 +56,7 @@ public:
     size_t max_depth() const;
     bool is_leaf() const;
     // get the leaf node a point is in
-    const BSP *get_point_node(const Vec3 &point) const;
+    const BSP &get_point_node(const Vec3 &point) const;
+    BSP &get_point_node(const Vec3 &point);
     bool point_in_solid(const Vec3 &point) const;
 };

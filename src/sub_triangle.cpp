@@ -1,4 +1,5 @@
 #include "sub_triangle.hpp"
+#include "camera.hpp"
 #include "index.hpp"
 #include "resolution.hpp"
 #include "texture.hpp"

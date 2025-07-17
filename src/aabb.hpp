@@ -17,5 +17,6 @@ public:
 
     bool is_point_inside(const Vec3 &p) const;
     void clip(const Plane &plane);
+    bool intersects(const Plane &plane) const;
     std::array<Vec3, 8> get_vertices() const;
 };

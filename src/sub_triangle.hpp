@@ -1,6 +1,5 @@
 #pragma once
 
-#include "camera.hpp"
 #include "color.hpp"
 #include "texture.hpp"
 #include "vector/vec2.hpp"
@@ -9,6 +8,7 @@
 #include <span>
 
 class Triangle;
+class Camera;
 
 // used exclusively for rendering.
 // when a triangle is clipped with the near plane, 0-2 instances of SubTriangle

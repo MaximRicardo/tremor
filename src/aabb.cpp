@@ -72,3 +72,16 @@ void AABB::clip(const Plane &plane)
     this->min = new_min;
     this->max = new_max;
 }
+
+bool AABB::intersects(const Plane &plane) const
+{
+    auto vs = this->get_vertices();
+
+    Vec3 prev_v;
+    for (const auto &v : vs) {
+        if (plane.does_line_intersect(prev_v, v))
+            return true;
+    }
+
+    return false;
+}

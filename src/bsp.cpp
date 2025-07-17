@@ -1,10 +1,12 @@
 #include "bsp.hpp"
+#include "camera.hpp"
 #include "constants.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <utility>
 
 namespace {
 
@@ -103,6 +105,9 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (this->is_leaf())
         return;
 
+    if (!cam.get_frustum().b_box_partially_inside(this->b_box))
+        return;
+
     bool cam_in_front = !this->innode_info->plane.is_point_behind(cam.pos);
 
     // since we wanna render everything back to front, we gotta flip around
@@ -162,21 +167,21 @@ void BSP::alloc_leaf_nodes()
         this->in_front = std::unique_ptr<BSP>(new BSP(this));
 }
 
-void BSP::init_leaf_node(const AABB &cur_box)
+void BSP::init_leaf_node()
 {
     this->leaf_info = std::make_unique<LeafInfo>();
 
     // leaf nodes behind their parent are always in solid space, while ones
     // in front of their parents are always in empty space
     this->leaf_info->empty = this->parent->behind.get() != this;
-
-    this->leaf_info->b_box = cur_box;
 }
 
 void BSP::create_leaf_nodes(const AABB &cur_box)
 {
+    this->b_box = cur_box;
+
     if (this->is_leaf() && !this->innode_info) {
-        this->init_leaf_node(cur_box);
+        this->init_leaf_node();
     } else {
         this->alloc_leaf_nodes();
 
@@ -198,29 +203,32 @@ void BSP::create_leaf_nodes()
              Consts::map_bounding_box_max_z)));
 }
 
-const BSP *BSP::get_point_node(const Vec3 &point) const
+const BSP &BSP::get_point_node(const Vec3 &point) const
 {
     if (this->is_leaf()) {
         assert(this->leaf_info);
-        return this;
+        return *this;
     } else {
         auto &node = this->innode_info->plane.is_point_behind(point)
                          ? this->behind
                          : this->in_front;
-        if (!node)
-            return nullptr;
         return node->get_point_node(point);
     }
 }
 
+BSP &BSP::get_point_node(const Vec3 &point)
+{
+    return const_cast<BSP &>(std::as_const(*this).get_point_node(point));
+}
+
 bool BSP::point_in_solid(const Vec3 &point) const
 {
-    auto p_node = this->get_point_node(point);
+    auto &p_node = this->get_point_node(point);
 
     std::cout << "point = (" << point << ")\n";
-    std::cout << "min = (" << p_node->leaf_info->b_box.min << ")\n";
-    std::cout << "max = (" << p_node->leaf_info->b_box.max << ")\n";
-    std::cout << "point inside = "
-              << p_node->leaf_info->b_box.is_point_inside(point) << "\n";
-    return !p_node->leaf_info->empty;
+    std::cout << "min = (" << p_node.b_box.min << ")\n";
+    std::cout << "max = (" << p_node.b_box.max << ")\n";
+    std::cout << "point inside = " << p_node.b_box.is_point_inside(point)
+              << "\n";
+    return !p_node.leaf_info->empty;
 }

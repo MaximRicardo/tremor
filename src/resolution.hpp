@@ -8,6 +8,7 @@ namespace Res {
 constexpr uint32_t width = 320;
 constexpr uint32_t height = 200;
 constexpr size_t size = width * height;
+constexpr float aspect_ratio = static_cast<float>(width) / height;
 
 constexpr uint32_t upscaled_width = 1280;
 constexpr uint32_t upscaled_height = 720;

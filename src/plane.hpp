@@ -14,6 +14,8 @@ public:
 
     Plane();
     Plane(Vec3 normal, float d);
+    // p is a point on the plane
+    Plane(Vec3 normal, Vec3 p);
 
     bool does_line_intersect(const Vec3 &start, const Vec3 &end) const;
     // returns the intersection point and it's distance from start, relative to

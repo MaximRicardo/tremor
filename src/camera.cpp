@@ -1,7 +1,10 @@
 #include "camera.hpp"
 #include "angle.hpp"
+#include "constants.hpp"
 #include "fov.hpp"
+#include "frustum.hpp"
 #include "input/input.hpp"
+#include "resolution.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -94,4 +97,34 @@ Vec3 Camera::move_up_vec() const
     Vec3 v = Vec3(0.f, 1.f, 0.f);
     v = v.rotate_about_y(this->yaw);
     return v;
+}
+
+Frustum Camera::get_frustum() const
+{
+    Vec3 forward = this->look_forward_vec();
+    Vec3 right = this->look_right_vec();
+    Vec3 up = this->look_up_vec();
+
+    float far_half_h = Consts::z_far * std::tan(this->vfov.get() * 0.5f);
+    float far_half_w = Consts::z_far * std::tan(this->hfov.get() * 0.5f);
+    Vec3 far_center = forward * Consts::z_far;
+
+    std::array<Plane, Frustum::n_faces> planes;
+
+    planes[Frustum::near_face] =
+        Plane(-forward, -(forward.dot(this->pos) + Consts::z_near));
+    planes[Frustum::far_face] =
+        Plane(forward, forward.dot(this->pos) + Consts::z_far);
+
+    planes[Frustum::right_face] = Plane(
+        ((far_center + right * far_half_w) - this->pos).cross(up), this->pos);
+    planes[Frustum::left_face] = Plane(
+        (-(far_center - right * far_half_w) - this->pos).cross(up), this->pos);
+
+    planes[Frustum::top_face] = Plane(
+        (-(far_center + up * far_half_h) - this->pos).cross(right), this->pos);
+    planes[Frustum::bottom_face] = Plane(
+        ((far_center - up * far_half_h) - this->pos).cross(right), this->pos);
+
+    return Frustum(planes);
 }

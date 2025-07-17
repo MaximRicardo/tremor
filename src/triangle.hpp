@@ -1,6 +1,5 @@
 #pragma once
 
-#include "camera.hpp"
 #include "color.hpp"
 #include "sub_triangle.hpp"
 #include "texture.hpp"
@@ -9,6 +8,7 @@
 #include <span>
 
 class Plane;
+class Camera;
 
 class Triangle {
 

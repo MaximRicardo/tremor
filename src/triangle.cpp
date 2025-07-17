@@ -1,4 +1,5 @@
 #include "triangle.hpp"
+#include "camera.hpp"
 #include "constants.hpp"
 #include "plane.hpp"
 #include "sub_triangle.hpp"

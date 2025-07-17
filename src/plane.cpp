@@ -8,6 +8,7 @@
 
 Plane::Plane() {};
 Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
+Plane::Plane(Vec3 normal, Vec3 p) : normal(normal), d(normal.dot(p)) {}
 
 namespace {
 
