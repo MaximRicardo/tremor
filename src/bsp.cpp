@@ -143,7 +143,7 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (this->is_leaf())
         return;
 
-    if (!cam.get_frustum().b_box_partially_inside(this->b_box)) {
+    if (!cam.get_frustum().b_box_maybe_inside(this->b_box)) {
         return;
     }
 

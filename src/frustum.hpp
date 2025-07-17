@@ -25,6 +25,5 @@ public:
     Vec3 up_vec() const;
 
     bool contains(const Vec3 &p) const;
-    // also returns true if the box is entirely inside
-    bool b_box_partially_inside(const AABB &box) const;
+    bool b_box_maybe_inside(const AABB &box) const;
 };

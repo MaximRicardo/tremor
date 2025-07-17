@@ -68,7 +68,7 @@ bool Frustum::b_box_partially_inside(const AABB &box) const
 }
 */
 
-bool Frustum::b_box_partially_inside(const AABB &box) const
+bool Frustum::b_box_maybe_inside(const AABB &box) const
 {
     for (const auto &plane : this->planes) {
         bool nx = plane.normal.x > 0.f;
