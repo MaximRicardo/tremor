@@ -9,9 +9,6 @@
 #include <utility>
 #include <variant>
 
-// TODO:
-//    get rid of all the repeated code
-
 namespace {
 
 constexpr float split_plane_epsilon = 0.0001f;
@@ -79,7 +76,7 @@ BSP::LeafInfo &BSP::leaf_info()
     return const_cast<LeafInfo &>(std::as_const(*this).leaf_info());
 }
 
-void BSP::insert_tris_behind(const Triangle &tri)
+void BSP::insert_tris_behind(const Triangle &tri, bool leaf_insert)
 {
     auto &info = this->innode_info();
 
@@ -98,11 +95,14 @@ void BSP::insert_tris_behind(const Triangle &tri)
     }
 
     for (size_t i = start_idx; i < tris_behind.n_tris; ++i) {
-        this->behind->insert(tris_behind.tris[i]);
+        if (leaf_insert)
+            this->behind->leaf_insert(tris_behind.tris[i]);
+        else
+            this->behind->insert(tris_behind.tris[i]);
     }
 }
 
-void BSP::insert_tris_in_front(const Triangle &tri)
+void BSP::insert_tris_in_front(const Triangle &tri, bool leaf_insert)
 {
     auto tris_in_front =
         Plane(this->innode_info().plane.normal,
@@ -120,15 +120,18 @@ void BSP::insert_tris_in_front(const Triangle &tri)
     }
 
     for (size_t i = start_idx; i < tris_in_front.n_tris; ++i) {
-        this->in_front->insert(tris_in_front.tris[i]);
+        if (leaf_insert)
+            this->in_front->leaf_insert(tris_in_front.tris[i]);
+        else
+            this->in_front->insert(tris_in_front.tris[i]);
     }
 }
 
 void BSP::insert(const Triangle &tri)
 {
     if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
-        this->insert_tris_behind(tri);
-        this->insert_tris_in_front(tri);
+        this->insert_tris_behind(tri, false);
+        this->insert_tris_in_front(tri, false);
     }
 }
 
@@ -139,60 +142,13 @@ void BSP::insert(std::span<const Triangle> tris)
     }
 }
 
-// CODE SMELL!
-void BSP::leaf_insert_tris_behind(const Triangle &tri)
-{
-    auto &info = this->innode_info();
-
-    auto tris_behind =
-        Plane(-info.plane.normal, -info.plane.d + split_plane_epsilon)
-            .clip(tri);
-
-    if (tris_behind.n_tris == 0)
-        return;
-
-    size_t start_idx = 0;
-    if (!this->behind) {
-        this->behind = std::unique_ptr<BSP>(
-            new BSP(tris_behind.tris[0].get_plane(), this));
-        start_idx = 1;
-    }
-
-    for (size_t i = start_idx; i < tris_behind.n_tris; ++i) {
-        this->behind->leaf_insert(tris_behind.tris[i]);
-    }
-}
-
-// CODE SMELL!
-void BSP::leaf_insert_tris_in_front(const Triangle &tri)
-{
-    auto tris_in_front =
-        Plane(this->innode_info().plane.normal,
-              this->innode_info().plane.d + split_plane_epsilon)
-            .clip(tri);
-
-    if (tris_in_front.n_tris == 0)
-        return;
-
-    size_t start_idx = 0;
-    if (!this->in_front) {
-        this->in_front = std::unique_ptr<BSP>(
-            new BSP(tris_in_front.tris[0].get_plane(), this));
-        start_idx = 1;
-    }
-
-    for (size_t i = start_idx; i < tris_in_front.n_tris; ++i) {
-        this->in_front->leaf_insert(tris_in_front.tris[i]);
-    }
-}
-
 void BSP::leaf_insert(const Triangle &tri)
 {
     if (this->is_leaf()) {
         this->leaf_info().edge_tris.push_back(tri);
     } else if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
-        this->leaf_insert_tris_behind(tri);
-        this->leaf_insert_tris_in_front(tri);
+        this->insert_tris_behind(tri, true);
+        this->insert_tris_in_front(tri, true);
     } else if (this->innode_info().plane.normal.dot(tri.get_plane().normal) <
                0.f) {
         this->behind->leaf_insert(tri);

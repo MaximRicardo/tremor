@@ -40,15 +40,13 @@ class BSP {
 
     // doesn't physically put triangles into the tree, instead uses the provided
     // triangles' planes to create the structure of the tree
-    void insert_tris_behind(const Triangle &tri);
-    void insert_tris_in_front(const Triangle &tri);
+    void insert_tris_behind(const Triangle &tri, bool leaf_insert);
+    void insert_tris_in_front(const Triangle &tri, bool leaf_insert);
     void insert(const Triangle &tri);
     void insert(std::span<const Triangle> tris);
 
     // insertion of triangles after the structure of the tree has been finalized
     // and the final LeafInfo::edge_tris can be found
-    void leaf_insert_tris_behind(const Triangle &tri);
-    void leaf_insert_tris_in_front(const Triangle &tri);
     void leaf_insert(const Triangle &tri);
     void leaf_insert(std::span<const Triangle> tris);
 
