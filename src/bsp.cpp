@@ -145,7 +145,10 @@ void BSP::insert(std::span<const Triangle> tris)
 void BSP::leaf_insert(const Triangle &tri)
 {
     if (this->is_leaf()) {
-        this->leaf_info().edge_tris.push_back(tri);
+        // don't insert triangles into solid nodes, cuz those triangles will
+        // never be seen anyway
+        if (this->leaf_info().empty)
+            this->leaf_info().edge_tris.push_back(tri);
     } else if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri, true);
         this->insert_tris_in_front(tri, true);
