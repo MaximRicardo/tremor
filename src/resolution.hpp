@@ -11,7 +11,7 @@ constexpr size_t size = width * height;
 constexpr float aspect_ratio = static_cast<float>(width) / height;
 
 constexpr uint32_t upscaled_width = 1280;
-constexpr uint32_t upscaled_height = 720;
+constexpr uint32_t upscaled_height = 800;
 constexpr size_t upscaled_size = upscaled_width * upscaled_height;
 
 } // namespace Res
