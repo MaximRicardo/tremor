@@ -27,7 +27,6 @@ int main()
 
     auto tris = ObjLoader::load_file("../objs/sphere.obj");
     BSP bsp(tris);
-    bsp.create_leaf_nodes();
 
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
     std::cout << "bsp max depth is " << bsp.max_depth() << "\n";

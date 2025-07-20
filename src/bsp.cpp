@@ -9,6 +9,9 @@
 #include <utility>
 #include <variant>
 
+// TODO:
+//    get rid of all the repeated code
+
 namespace {
 
 constexpr float split_plane_epsilon = 0.0001f;
@@ -17,22 +20,20 @@ constexpr float split_plane_epsilon = 0.0001f;
 
 BSP::BSP(BSP *parent) : parent(parent) {}
 
-BSP::BSP(Triangle node_tri, BSP *parent) : parent(parent)
+BSP::BSP(const Plane &plane, BSP *parent) : parent(parent)
 {
     this->info = std::make_unique<InNodeInfo>();
 
-    this->innode_info().tris.push_back(node_tri);
-    this->innode_info().plane = node_tri.get_plane();
+    this->innode_info().plane = plane;
 }
 
-BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
+BSP::BSP(std::span<const Triangle> tris)
 {
     if (tris.size() == 0)
         return;
 
     this->info = std::make_unique<InNodeInfo>();
 
-    this->innode_info().tris.push_back(tris[0]);
     this->innode_info().plane = tris[0].get_plane();
 
     std::vector<Triangle> other_tris;
@@ -42,6 +43,8 @@ BSP::BSP(std::span<const Triangle> tris, BSP *parent) : parent(parent)
     }
 
     this->insert(other_tris);
+
+    this->create_leaf_nodes(tris);
 }
 
 bool BSP::has_innode_info() const
@@ -89,7 +92,8 @@ void BSP::insert_tris_behind(const Triangle &tri)
 
     size_t start_idx = 0;
     if (!this->behind) {
-        this->behind = std::make_unique<BSP>(tris_behind.tris[0], this);
+        this->behind = std::unique_ptr<BSP>(
+            new BSP(tris_behind.tris[0].get_plane(), this));
         start_idx = 1;
     }
 
@@ -110,7 +114,8 @@ void BSP::insert_tris_in_front(const Triangle &tri)
 
     size_t start_idx = 0;
     if (!this->in_front) {
-        this->in_front = std::make_unique<BSP>(tris_in_front.tris[0], this);
+        this->in_front = std::unique_ptr<BSP>(
+            new BSP(tris_in_front.tris[0].get_plane(), this));
         start_idx = 1;
     }
 
@@ -121,18 +126,85 @@ void BSP::insert_tris_in_front(const Triangle &tri)
 
 void BSP::insert(const Triangle &tri)
 {
-    if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
-        this->innode_info().tris.push_back(tri);
-    } else {
+    if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri);
         this->insert_tris_in_front(tri);
     }
 }
 
-void BSP::insert(const std::span<Triangle> &tris)
+void BSP::insert(std::span<const Triangle> tris)
 {
-    for (auto &tri : tris) {
+    for (const auto &tri : tris) {
         this->insert(tri);
+    }
+}
+
+// CODE SMELL!
+void BSP::leaf_insert_tris_behind(const Triangle &tri)
+{
+    auto &info = this->innode_info();
+
+    auto tris_behind =
+        Plane(-info.plane.normal, -info.plane.d + split_plane_epsilon)
+            .clip(tri);
+
+    if (tris_behind.n_tris == 0)
+        return;
+
+    size_t start_idx = 0;
+    if (!this->behind) {
+        this->behind = std::unique_ptr<BSP>(
+            new BSP(tris_behind.tris[0].get_plane(), this));
+        start_idx = 1;
+    }
+
+    for (size_t i = start_idx; i < tris_behind.n_tris; ++i) {
+        this->behind->leaf_insert(tris_behind.tris[i]);
+    }
+}
+
+// CODE SMELL!
+void BSP::leaf_insert_tris_in_front(const Triangle &tri)
+{
+    auto tris_in_front =
+        Plane(this->innode_info().plane.normal,
+              this->innode_info().plane.d + split_plane_epsilon)
+            .clip(tri);
+
+    if (tris_in_front.n_tris == 0)
+        return;
+
+    size_t start_idx = 0;
+    if (!this->in_front) {
+        this->in_front = std::unique_ptr<BSP>(
+            new BSP(tris_in_front.tris[0].get_plane(), this));
+        start_idx = 1;
+    }
+
+    for (size_t i = start_idx; i < tris_in_front.n_tris; ++i) {
+        this->in_front->leaf_insert(tris_in_front.tris[i]);
+    }
+}
+
+void BSP::leaf_insert(const Triangle &tri)
+{
+    if (this->is_leaf()) {
+        this->leaf_info().edge_tris.push_back(tri);
+    } else if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
+        this->leaf_insert_tris_behind(tri);
+        this->leaf_insert_tris_in_front(tri);
+    } else if (this->innode_info().plane.normal.dot(tri.get_plane().normal) <
+               0.f) {
+        this->behind->leaf_insert(tri);
+    } else {
+        this->in_front->leaf_insert(tri);
+    }
+}
+
+void BSP::leaf_insert(std::span<const Triangle> tris)
+{
+    for (const auto &tri : tris) {
+        this->leaf_insert(tri);
     }
 }
 
@@ -140,8 +212,14 @@ void BSP::insert(const std::span<Triangle> &tris)
 void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
                  const Camera &cam, std::span<const Texture> texs) const
 {
-    if (this->is_leaf())
+    if (this->is_leaf()) {
+        for (const auto &tri : this->leaf_info().edge_tris) {
+            if (tri.get_plane().is_point_behind(cam.pos))
+                continue;
+            tri.render(frame, depth_buffer, cam, texs);
+        }
         return;
+    }
 
     /*
     if (!cam.get_frustum().b_box_maybe_inside(this->b_box)) {
@@ -160,12 +238,6 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     if (first)
         first->render(frame, depth_buffer, cam, texs);
 
-    if (cam_in_front) {
-        for (const auto &tri : this->innode_info().tris) {
-            tri.render(frame, depth_buffer, cam, texs);
-        }
-    }
-
     if (last)
         last->render(frame, depth_buffer, cam, texs);
 }
@@ -173,9 +245,9 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
 size_t BSP::n_triangles() const
 {
     if (this->is_leaf())
-        return 0;
+        return this->leaf_info().edge_tris.size();
 
-    size_t count = this->innode_info().tris.size();
+    size_t count = 0;
 
     count += this->behind->n_triangles();
     count += this->in_front->n_triangles();
@@ -235,13 +307,15 @@ void BSP::create_leaf_nodes(const AABB &cur_box)
     }
 }
 
-void BSP::create_leaf_nodes()
+void BSP::create_leaf_nodes(std::span<const Triangle> tris)
 {
     this->create_leaf_nodes(AABB(
         Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
              Consts::map_bounding_box_min_z),
         Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
              Consts::map_bounding_box_max_z)));
+
+    this->leaf_insert(tris);
 }
 
 const BSP &BSP::get_point_node(const Vec3 &point) const
