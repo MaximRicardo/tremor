@@ -8,6 +8,12 @@
 #include <variant>
 #include <vector>
 
+// a quake-style binary space partitioning tree.
+// each innode holds a splitting plane, and each empty leaf node holds a set
+// of triangles along the boundaries of the convex sub-space the leaf
+// represents, with each triangle pointing inwards towards the center of the
+// node's sub-space. each leaf node's set of triangles can be rendered with zero
+// overdraw via backface culling.
 class BSP {
 
     struct LeafInfo {
@@ -36,19 +42,19 @@ class BSP {
     void alloc_leaf_nodes();
     void init_leaf_node();
     void create_leaf_nodes(const AABB &cur_box);
-    void create_leaf_nodes(std::span<const Triangle> tris);
+    void create_leaf_nodes();
 
     // doesn't physically put triangles into the tree, instead uses the provided
     // triangles' planes to create the structure of the tree
     void insert_tris_behind(const Triangle &tri, bool leaf_insert);
     void insert_tris_in_front(const Triangle &tri, bool leaf_insert);
     void insert(const Triangle &tri);
-    void insert(std::span<const Triangle> tris);
+    void create_outline(std::span<const Triangle> tris);
 
     // insertion of triangles after the structure of the tree has been finalized
     // and the final LeafInfo::edge_tris can be found
     void leaf_insert(const Triangle &tri);
-    void leaf_insert(std::span<const Triangle> tris);
+    void fill_with_triangles(std::span<const Triangle> tris);
 
     explicit BSP(BSP *parent);
     BSP(const Plane &plane, BSP *parent);

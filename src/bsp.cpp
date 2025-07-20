@@ -24,24 +24,23 @@ BSP::BSP(const Plane &plane, BSP *parent) : parent(parent)
     this->innode_info().plane = plane;
 }
 
+// works by first creating the outline of the tree, and then filling the tree
+// with actual triangles. this is cuz we need full knowledge of the bsp tree's
+// splitting planes before we can start sending triangles to the leaf nodes,
+// splitting them with every innode's splitting plane along the way.
 BSP::BSP(std::span<const Triangle> tris)
 {
     if (tris.size() == 0)
         return;
 
     this->info = std::make_unique<InNodeInfo>();
-
     this->innode_info().plane = tris[0].get_plane();
 
     std::vector<Triangle> other_tris;
-    other_tris.reserve(tris.size() - 1);
-    for (size_t i = 1; i < tris.size(); ++i) {
-        other_tris.push_back(tris[i]);
-    }
+    other_tris.assign(tris.begin() + 1, tris.end());
+    this->create_outline(other_tris);
 
-    this->insert(other_tris);
-
-    this->create_leaf_nodes(tris);
+    this->fill_with_triangles(tris);
 }
 
 bool BSP::has_innode_info() const
@@ -135,11 +134,15 @@ void BSP::insert(const Triangle &tri)
     }
 }
 
-void BSP::insert(std::span<const Triangle> tris)
+void BSP::create_outline(std::span<const Triangle> tris)
 {
     for (const auto &tri : tris) {
         this->insert(tri);
     }
+
+    // a seperate pass is required to allocate all the leaf nodes once we know
+    // we're done inserting triangles
+    this->create_leaf_nodes();
 }
 
 void BSP::leaf_insert(const Triangle &tri)
@@ -160,7 +163,7 @@ void BSP::leaf_insert(const Triangle &tri)
     }
 }
 
-void BSP::leaf_insert(std::span<const Triangle> tris)
+void BSP::fill_with_triangles(std::span<const Triangle> tris)
 {
     for (const auto &tri : tris) {
         this->leaf_insert(tri);
@@ -266,15 +269,13 @@ void BSP::create_leaf_nodes(const AABB &cur_box)
     }
 }
 
-void BSP::create_leaf_nodes(std::span<const Triangle> tris)
+void BSP::create_leaf_nodes()
 {
     this->create_leaf_nodes(AABB(
         Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
              Consts::map_bounding_box_min_z),
         Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
              Consts::map_bounding_box_max_z)));
-
-    this->leaf_insert(tris);
 }
 
 const BSP &BSP::get_point_node(const Vec3 &point) const
