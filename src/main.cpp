@@ -2,6 +2,7 @@
 #include "camera.hpp"
 #include "color.hpp"
 #include "map_loading/obj_loader.hpp"
+#include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "texture.hpp"
@@ -25,6 +26,7 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
+    QuakeMapLoader::load_file("../maps/test.map");
     auto tris = ObjLoader::load_file("../objs/sphere.obj");
     BSP bsp(tris);
 

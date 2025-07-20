@@ -1,0 +1,11 @@
+{
+    "spawnflags" "0"
+
+    "classname" "worldspawn"
+
+    "asdfas" "blahblah"
+}
+
+{
+    "classname" "other-entity"
+}
