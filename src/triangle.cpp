@@ -89,11 +89,5 @@ void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,
 
 Plane Triangle::get_plane() const
 {
-    Vec3 a = this->vs[1] - this->vs[0];
-    Vec3 b = this->vs[2] - this->vs[0];
-
-    Vec3 normal = b.cross(a).normalize();
-    float d = normal.dot(this->vs[0]);
-
-    return Plane(normal, d);
+    return Plane(this->vs);
 }

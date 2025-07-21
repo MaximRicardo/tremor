@@ -3,6 +3,7 @@
 #include "triangle.hpp"
 #include "vector/vec3.hpp"
 #include <array>
+#include <span>
 #include <tuple>
 
 class Plane {
@@ -17,6 +18,8 @@ public:
     Plane(Vec3 normal, float d);
     // p is a point on the plane
     Plane(Vec3 normal, Vec3 p);
+    // creates a plane from a ccw triangle
+    explicit Plane(std::span<const Vec3, 3> vs);
 
     bool does_line_intersect(const Vec3 &start, const Vec3 &end) const;
     // returns the intersection point and it's distance from start, relative to

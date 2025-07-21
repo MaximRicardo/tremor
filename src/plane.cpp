@@ -6,10 +6,6 @@
 #include <cstdlib>
 #include <tuple>
 
-Plane::Plane() {};
-Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
-Plane::Plane(Vec3 normal, Vec3 p) : normal(normal), d(normal.dot(p)) {}
-
 namespace {
 
 // matches the winding order of tri to that of other
@@ -137,6 +133,21 @@ split_tri_with_plane(const Plane &plane, const Triangle &tri,
 }
 
 } // namespace
+
+Plane::Plane() {};
+
+Plane::Plane(Vec3 normal, float d) : normal(normal), d(d) {}
+
+Plane::Plane(Vec3 normal, Vec3 p) : normal(normal), d(normal.dot(p)) {}
+
+Plane::Plane(std::span<const Vec3, 3> vs)
+{
+    Vec3 a = vs[1] - vs[0];
+    Vec3 b = vs[2] - vs[0];
+
+    this->normal = b.cross(a).normalize();
+    this->d = normal.dot(vs[0]);
+}
 
 bool Plane::does_line_intersect(const Vec3 &start, const Vec3 &end) const
 {
