@@ -17,17 +17,6 @@
 
 namespace {
 
-void skip_char(std::ifstream &file, char expected_char)
-{
-    char c;
-    file >> c;
-
-    if (c != expected_char) {
-        throw std::runtime_error(std::string("error: expected '") +
-                                 expected_char + "', got '" + c + "'");
-    }
-}
-
 // represents a key value pair in an entity
 class EntityInfo {
 
@@ -37,18 +26,6 @@ public:
 
     explicit EntityInfo(std::ifstream &file);
 };
-
-EntityInfo::EntityInfo(std::ifstream &file)
-{
-    file >> this->key;
-    file >> this->value;
-
-    // remove the encasing double quotes
-    this->key.erase(this->key.begin());
-    this->key.erase(this->key.end() - 1);
-    this->value.erase(this->value.begin());
-    this->value.erase(this->value.end() - 1);
-}
 
 // each plane of each brush is represented by a triangle (and some other info)
 class BrushPlane {
@@ -65,6 +42,56 @@ public:
 
     Plane get_plane() const;
 };
+
+class Brush {
+
+public:
+    std::vector<BrushPlane> planes;
+
+    // file should be pointing to the line after the left curly marking the
+    // start of the brush
+    Brush(std::ifstream &file);
+
+    std::vector<Triangle> get_tris() const;
+};
+
+class Entity {
+
+public:
+    std::string name;
+    // classname is not included in this list
+    std::vector<EntityInfo> info;
+    std::vector<Brush> brushes;
+
+    // file should be pointing to the line after the left curly marking the
+    // start of the entity
+    explicit Entity(std::ifstream &file);
+
+    size_t get_info_idx(std::string_view key) const;
+};
+
+void skip_char(std::ifstream &file, char expected_char)
+{
+    char c;
+    file >> c;
+
+    if (c != expected_char) {
+        throw std::runtime_error(std::string("error: expected '") +
+                                 expected_char + "', got '" + c + "'");
+    }
+}
+
+EntityInfo::EntityInfo(std::ifstream &file)
+{
+    file >> this->key;
+    file >> this->value;
+
+    // remove the encasing double quotes
+    this->key.erase(this->key.begin());
+    this->key.erase(this->key.end() - 1);
+    this->value.erase(this->value.begin());
+    this->value.erase(this->value.end() - 1);
+}
 
 BrushPlane::BrushPlane(std::ifstream &file)
 {
@@ -107,18 +134,6 @@ Plane BrushPlane::get_plane() const
     return Plane(n, d);
 }
 
-class Brush {
-
-public:
-    std::vector<BrushPlane> planes;
-
-    // file should be pointing to the line after the left curly marking the
-    // start of the brush
-    Brush(std::ifstream &file);
-
-    std::vector<Triangle> get_tris() const;
-};
-
 Brush::Brush(std::ifstream &file)
 {
     while (true) {
@@ -148,21 +163,6 @@ std::vector<Triangle> Brush::get_tris() const
 
     return shape.get_triangles();
 }
-
-class Entity {
-
-public:
-    std::string name;
-    // classname is not included in this list
-    std::vector<EntityInfo> info;
-    std::vector<Brush> brushes;
-
-    // file should be pointing to the line after the left curly marking the
-    // start of the entity
-    explicit Entity(std::ifstream &file);
-
-    size_t get_info_idx(std::string_view key) const;
-};
 
 Entity::Entity(std::ifstream &file)
 {

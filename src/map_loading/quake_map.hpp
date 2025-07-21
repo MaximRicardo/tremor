@@ -1,5 +1,7 @@
 #pragma once
 
+// for reading quake .map files
+
 #include "../triangle.hpp"
 #include <filesystem>
 #include <vector>
