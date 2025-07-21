@@ -1,4 +1,7 @@
 #include "quake_map.hpp"
+#include "../constants.hpp"
+#include "../plane.hpp"
+#include "../shape.hpp"
 #include <array>
 #include <cassert>
 #include <cstdint>
@@ -59,6 +62,8 @@ public:
     Vec2 scale;
 
     explicit BrushPlane(std::ifstream &file);
+
+    Plane get_plane() const;
 };
 
 BrushPlane::BrushPlane(std::ifstream &file)
@@ -92,6 +97,16 @@ BrushPlane::BrushPlane(std::ifstream &file)
     file >> this->scale.y;
 }
 
+Plane BrushPlane::get_plane() const
+{
+    Vec3 n = -(this->vs[1] - this->vs[0])
+                  .cross(this->vs[2] - this->vs[0])
+                  .normalize();
+    float d = n.dot(this->vs[0]);
+
+    return Plane(n, d);
+}
+
 class Brush {
 
 public:
@@ -100,6 +115,8 @@ public:
     // file should be pointing to the line after the left curly marking the
     // start of the brush
     Brush(std::ifstream &file);
+
+    std::vector<Triangle> get_tris() const;
 };
 
 Brush::Brush(std::ifstream &file)
@@ -113,6 +130,33 @@ Brush::Brush(std::ifstream &file)
     }
 
     skip_char(file, '}');
+}
+
+std::vector<Triangle> Brush::get_tris() const
+{
+    if (this->planes.empty())
+        return {};
+
+    ConvexShape shape = ConvexShape::box(
+        Vec3(Consts::map_bounding_box_max_x - Consts::map_bounding_box_min_x,
+             Consts::map_bounding_box_max_y - Consts::map_bounding_box_min_y,
+             Consts::map_bounding_box_max_z - Consts::map_bounding_box_min_z));
+
+    for (const auto &plane : this->planes) {
+        std::cout << "normal = (" << plane.get_plane().normal << ")\n";
+        std::cout << "d = " << plane.get_plane().d << "\n";
+        shape.clip(plane.get_plane().flipped());
+    }
+
+    std::cout << "n polys = " << shape.polys.size() << "\n";
+    for (const auto &poly : shape.polys) {
+        std::cout << "new poly\n";
+        for (size_t i = 0; i < poly.vs.size(); ++i) {
+            std::cout << "v" << i << " = (" << poly.vs[i] << ")\n";
+        }
+    }
+
+    return shape.get_triangles();
 }
 
 class Entity {
@@ -201,7 +245,16 @@ std::vector<Triangle> read_file(std::ifstream &file)
         }
     }
 
-    return {};
+    std::vector<Triangle> tris;
+
+    for (const auto &entity : entities) {
+        for (const auto &brush : entity.brushes) {
+            auto brush_tris = brush.get_tris();
+            tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
+        }
+    }
+
+    return tris;
 }
 
 } // namespace

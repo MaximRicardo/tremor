@@ -2,6 +2,8 @@
 
 namespace Consts {
 
+constexpr float epsilon = 0.001f;
+
 constexpr float z_near = 0.1f;
 constexpr float z_far = 1000.f;
 

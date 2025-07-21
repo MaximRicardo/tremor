@@ -5,6 +5,7 @@
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
+#include "shape.hpp"
 #include "texture.hpp"
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
@@ -26,10 +27,11 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
-    QuakeMapLoader::load_file("../maps/test.map");
-    auto tris = ObjLoader::load_file("../objs/sphere.obj");
+    auto tris = QuakeMapLoader::load_file("../maps/test.map");
+    // auto tris = ObjLoader::load_file("../objs/cube.obj");
     BSP bsp(tris);
 
+    std::cout << "original tri count is " << tris.size() << "\n";
     std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
     std::cout << "bsp max depth is " << bsp.max_depth() << "\n";
 
@@ -60,8 +62,11 @@ int main()
 
         /*
         for (auto &tri : tris) {
+            if (tri.get_plane().is_point_behind(cam.pos))
+                continue;
             tri.render(frame, depth_buffer, cam, texs);
-        }*/
+        }
+        */
         bsp.render(frame, depth_buffer, cam, texs);
 
         screen.update(frame.data());
