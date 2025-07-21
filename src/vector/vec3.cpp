@@ -5,7 +5,7 @@
 Vec3::Vec3() {}
 Vec3::Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
 
-static Vec3 zero()
+Vec3 Vec3::zero()
 {
     return Vec3(0.f, 0.f, 0.f);
 }
