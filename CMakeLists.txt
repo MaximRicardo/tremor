@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(quakent)
+project(tremor)
 
 # base options
 add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -fno-rtti)
@@ -27,7 +27,7 @@ add_compile_options(-Dm_RAYLIB=1)
 
 file(GLOB_RECURSE Sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-add_executable(quakent "${Sources}")
+add_executable(tremor "${Sources}")
 
-target_link_libraries(quakent -lraylib -lGL -lm -lpthread -ldl -lrt -lX11)
-target_include_directories(quakent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(tremor -lraylib -lGL -lm -lpthread -ldl -lrt -lX11)
+target_include_directories(tremor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
