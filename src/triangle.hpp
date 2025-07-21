@@ -39,4 +39,6 @@ public:
                 const Camera &cam, std::span<const Texture> texs) const;
 
     Plane get_plane() const;
+    float get_area() const;
+    bool is_degenerate() const;
 };

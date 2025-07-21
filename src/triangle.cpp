@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 
 namespace {
 
@@ -90,4 +91,17 @@ void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,
 Plane Triangle::get_plane() const
 {
     return Plane(this->vs);
+}
+
+float Triangle::get_area() const
+{
+    Vec3 ab = this->vs[1] - this->vs[0];
+    Vec3 ac = this->vs[2] - this->vs[0];
+
+    return ab.cross(ac).length() / 2.f;
+}
+
+bool Triangle::is_degenerate() const
+{
+    return this->get_area() < Consts::epsilon;
 }

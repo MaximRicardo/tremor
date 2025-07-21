@@ -147,6 +147,9 @@ void BSP::create_outline(std::span<const Triangle> tris)
 
 void BSP::leaf_insert(const Triangle &tri)
 {
+    if (tri.get_area() < Consts::epsilon)
+        return;
+
     if (this->is_leaf()) {
         // don't insert triangles into solid nodes, cuz those triangles will
         // never be seen anyway
