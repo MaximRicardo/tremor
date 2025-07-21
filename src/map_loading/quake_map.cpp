@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -34,9 +35,16 @@ public:
     explicit BrushPlane(std::string_view line);
 
     Plane get_plane() const;
+    Vec2 get_point_tex_coord(const Vec3 &p) const;
 };
 
 class Brush {
+
+    // finds the plane of the brush the given polygon is on
+    const BrushPlane *poly_plane(const Polygon &poly) const;
+    BrushPlane *poly_plane(const Polygon &poly);
+
+    ConvexShape get_shape() const;
 
 public:
     std::vector<BrushPlane> planes;
@@ -103,8 +111,6 @@ EntityInfo::EntityInfo(std::string_view line)
     stream >> this->key;
     stream >> this->value;
 
-    std::cout << "key = '" << this->key << "', value = '" << this->value
-              << "'\n";
     // remove the encasing double quotes
     this->key.erase(this->key.begin());
     this->key.erase(this->key.end() - 1);
@@ -155,6 +161,27 @@ Plane BrushPlane::get_plane() const
     return Plane(n, d);
 }
 
+Vec2 BrushPlane::get_point_tex_coord(const Vec3 &p) const
+{
+    Vec3 axis_u = this->u / this->scale.x;
+    Vec3 axis_v = this->v / this->scale.y;
+
+    Vec2 tex(p.dot(axis_u), p.dot(axis_v));
+    tex += offset;
+
+    // in quake, texture coordinates seems to have gone from -16 to 16 instead
+    // of 0 to 1?
+    tex += Vec2(16.f, 16.f);
+    tex /= 2.f;
+    tex /= 16.f;
+
+    // correct for the flipped x and y too
+    tex.x = 1.f - tex.x;
+    tex.y = 1.f - tex.y;
+
+    return tex;
+}
+
 Brush::Brush(std::ifstream &file)
 {
     std::string line;
@@ -170,11 +197,23 @@ Brush::Brush(std::ifstream &file)
     }
 }
 
-std::vector<Triangle> Brush::get_tris() const
+const BrushPlane *Brush::poly_plane(const Polygon &poly) const
 {
-    if (this->planes.empty())
-        return {};
+    for (const auto &plane : this->planes) {
+        if (poly.get_plane().is_coplanar(plane.get_plane()))
+            return &plane;
+    }
 
+    return nullptr;
+}
+
+BrushPlane *Brush::poly_plane(const Polygon &poly)
+{
+    return const_cast<BrushPlane *>(std::as_const(*this).poly_plane(poly));
+}
+
+ConvexShape Brush::get_shape() const
+{
     ConvexShape shape = ConvexShape::box(
         Vec3(Consts::map_bounding_box_max_x - Consts::map_bounding_box_min_x,
              Consts::map_bounding_box_max_y - Consts::map_bounding_box_min_y,
@@ -184,13 +223,35 @@ std::vector<Triangle> Brush::get_tris() const
         shape.clip(plane.get_plane().flipped());
     }
 
-    return shape.get_triangles();
+    return shape;
+}
+
+std::vector<Triangle> Brush::get_tris() const
+{
+    std::vector<Triangle> tris;
+
+    auto shape = this->get_shape();
+
+    for (const auto &poly : shape.polys) {
+        const BrushPlane *plane = this->poly_plane(poly);
+        assert(plane);
+
+        auto poly_tris = poly.get_triangles();
+        for (auto &tri : poly_tris) {
+            for (size_t i = 0; i < tri.vs.size(); ++i) {
+                tri.vts[i] = plane->get_point_tex_coord(tri.vs[i]);
+                std::cout << "vts[i] = (" << tri.vts[i] << ")\n";
+            }
+        }
+
+        tris.insert(tris.end(), poly_tris.begin(), poly_tris.end());
+    }
+
+    return tris;
 }
 
 Entity::Entity(std::ifstream &file)
 {
-    std::cout << "entity constructor\n";
-
     std::string line;
     while (std::getline(file, line)) {
         remove_leading_ws(line);
@@ -213,8 +274,6 @@ Entity::Entity(std::ifstream &file)
 
     this->name = this->info[name_idx].value;
     this->info.erase(this->info.begin() + name_idx);
-
-    std::cout << "constructor for " << this->name << " done\n";
 }
 
 size_t Entity::get_info_idx(std::string_view key) const
