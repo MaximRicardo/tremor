@@ -23,7 +23,7 @@ void Camera::limit_rotation()
 
 void Camera::handle_input(float delta_time, Screen &screen)
 {
-    float mov_dist = delta_time;
+    float mov_dist = delta_time * 16.f;
     float turn_speed = delta_time;
 
     if (Input::is_key_down(Input::Key::W, screen))
