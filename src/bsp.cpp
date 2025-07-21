@@ -150,13 +150,15 @@ void BSP::leaf_insert(const Triangle &tri)
     if (this->is_leaf()) {
         // don't insert triangles into solid nodes, cuz those triangles will
         // never be seen anyway
+#ifndef m_PLACE_TRIS_IN_SOLID_NODES
         if (this->leaf_info().empty)
+#endif
             this->leaf_info().edge_tris.push_back(tri);
-    } else if (this->innode_info().plane.is_coplanar(tri.get_plane())) {
+    } else if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri, true);
         this->insert_tris_in_front(tri, true);
     } else if (this->innode_info().plane.normal.dot(tri.get_plane().normal) <
-               0.f) {
+               -Consts::epsilon) {
         this->behind->leaf_insert(tri);
     } else {
         this->in_front->leaf_insert(tri);
@@ -170,7 +172,6 @@ void BSP::fill_with_triangles(std::span<const Triangle> tris)
     }
 }
 
-// probably gonna wanna find a way to make this function iterative at some point
 void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
                  const Camera &cam, std::span<const Texture> texs) const
 {

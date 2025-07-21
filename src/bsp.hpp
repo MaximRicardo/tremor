@@ -8,6 +8,10 @@
 #include <variant>
 #include <vector>
 
+// if shit breaks in weird ways u might wanna try disabling this to see if
+// there's something wrong with the way the tree detects solid nodes.
+// #define m_BSP_PLACE_TRIS_IN_SOLID_NODES
+
 // a quake-style binary space partitioning tree.
 // each innode holds a splitting plane, and each empty leaf node holds a set
 // of triangles along the boundaries of the convex sub-space the leaf
