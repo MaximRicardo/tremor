@@ -143,17 +143,7 @@ std::vector<Triangle> Brush::get_tris() const
              Consts::map_bounding_box_max_z - Consts::map_bounding_box_min_z));
 
     for (const auto &plane : this->planes) {
-        std::cout << "normal = (" << plane.get_plane().normal << ")\n";
-        std::cout << "d = " << plane.get_plane().d << "\n";
         shape.clip(plane.get_plane().flipped());
-    }
-
-    std::cout << "n polys = " << shape.polys.size() << "\n";
-    for (const auto &poly : shape.polys) {
-        std::cout << "new poly\n";
-        for (size_t i = 0; i < poly.vs.size(); ++i) {
-            std::cout << "v" << i << " = (" << poly.vs[i] << ")\n";
-        }
     }
 
     return shape.get_triangles();
@@ -228,21 +218,6 @@ std::vector<Triangle> read_file(std::ifstream &file)
             throw std::runtime_error("error: extraneous '}'");
         else if (c == '{')
             entities.emplace_back(file);
-    }
-
-    for (const auto &entity : entities) {
-        std::cout << "found entity named " << entity.name << "\n";
-        for (const auto &brush : entity.brushes) {
-            std::cout << "new brush\n";
-            for (const auto &plane : brush.planes) {
-                std::cout << "new plane\n";
-                for (auto it = plane.vs.begin(); it < plane.vs.end(); ++it) {
-                    std::cout << "v" << std::distance(plane.vs.begin(), it)
-                              << " = (" << it->x << ", " << it->y << ", "
-                              << it->z << ")\n";
-                }
-            }
-        }
     }
 
     std::vector<Triangle> tris;

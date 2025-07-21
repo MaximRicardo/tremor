@@ -5,7 +5,6 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <iostream>
 #include <span>
 #include <utility>
 
@@ -113,12 +112,9 @@ std::vector<Vec3> Polygon::get_intersections(const Plane &plane) const
         bool behind = plane.is_point_behind(*v);
         bool prev_behind = plane.is_point_behind(*prev);
 
-        if (behind != prev_behind) {
-            auto p = std::get<0>(plane.line_intersect_point(*prev, *v));
-            std::cout << "intersection at (" << p << ")\n";
+        if (behind != prev_behind)
             intersections.push_back(
                 std::get<0>(plane.line_intersect_point(*prev, *v)));
-        }
 
         prev = v;
     }
@@ -129,9 +125,6 @@ std::vector<Vec3> Polygon::get_intersections(const Plane &plane) const
 std::vector<Triangle> Polygon::get_triangles() const
 {
     std::vector<Triangle> tris;
-
-    for (size_t i = 0; i < this->vs.size(); ++i)
-        std::cout << "v[" << i << "] = (" << this->vs[i] << ")\n";
 
     for (size_t i = 1; i < this->vs.size(); i += 2) {
         size_t next = (i + 1) % this->vs.size();
