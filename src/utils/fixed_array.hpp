@@ -11,7 +11,9 @@
 template <typename T> class FixedArray {
 
     std::unique_ptr<T[]> elems;
-    size_t n_elems;
+    size_t n_elems = 0;
+
+    FixedArray() = default;
 
 public:
     explicit FixedArray(size_t size) : elems(new T[size]), n_elems(size) {};
@@ -23,17 +25,13 @@ public:
         }
     }
 
-    FixedArray(FixedArray &&other) : elems(other.elems), n_elems(other.n_elems)
-    {}
-
-    FixedArray operator=(const FixedArray &other)
+    FixedArray(FixedArray &&other) : FixedArray()
     {
-        return *this = FixedArray(other);
+        swap(*this, other);
     }
 
-    FixedArray operator=(FixedArray &&other)
+    FixedArray &operator=(FixedArray other)
     {
-        using namespace std;
         swap(*this, other);
         return *this;
     }
