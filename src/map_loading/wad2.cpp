@@ -78,7 +78,6 @@ WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)
     this->type = BinData::read_num<int8_t>(data, offset + type_offset);
     this->is_comprsd =
         BinData::read_num<int8_t>(data, offset + is_comprsd_offset);
-    // unused int16_t here
     this->name = get_name(data, offset + this->name_offset);
 
     if (this->is_comprsd)
@@ -92,6 +91,10 @@ WAD::WAD2Entry::read_mip_tex(std::span<const uint8_t> data) const
     assert(this->type == this->mip_tex_type);
 
     WAD2MipHeader mip(data, this->offset);
+    if (mip.name != this->name)
+        throw std::runtime_error("error: mipmap texture name '" + mip.name +
+                                 "' does not match entry texture name '" +
+                                 this->name + "'");
 
     return mip;
 }

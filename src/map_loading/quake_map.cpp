@@ -378,7 +378,12 @@ std::vector<Texture> load_wad_file(const Entity &worldspawn,
     std::filesystem::path wad_path =
         worldspawn.info[worldspawn.get_info_idx("wad")].value;
 
-    return WAD::load_file(map_dir / wad_path);
+    try {
+        return WAD::load_file(map_dir / wad_path);
+    } catch (std::runtime_error &e) {
+        throw std::runtime_error("failed to read WAD file '" +
+                                 wad_path.string() + "': " + e.what());
+    }
 }
 
 Map read_file(std::ifstream &file, const std::filesystem::path &path)
