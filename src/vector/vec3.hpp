@@ -12,7 +12,7 @@ public:
     Vec3();
     Vec3(float x, float y, float z);
     // copies the x, y, and z components
-    Vec3(Vec4 v);
+    Vec3(const Vec4 &v);
 
     static Vec3 zero();
 

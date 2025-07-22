@@ -1,6 +1,8 @@
 #pragma once
 
 #include <ostream>
+
+class Vec3;
 class Vec2i;
 
 class Vec2 {
@@ -11,6 +13,7 @@ public:
     Vec2();
     Vec2(float x, float y);
     Vec2(const Vec2i &v);
+    Vec2(const Vec3 &v);
 
     Vec2 operator+(const Vec2 &v) const;
     Vec2 operator+=(const Vec2 &v);
@@ -23,6 +26,7 @@ public:
 
     float dot(const Vec2 &v) const;
     Vec2 mix(const Vec2 &v, float t) const;
+    float dist(const Vec2 &v) const;
 };
 
 std::ostream &operator<<(std::ostream &os, const Vec2 &v);
@@ -44,6 +48,8 @@ public:
     Vec2i operator*=(int x);
     Vec2i operator/(int x) const;
     Vec2i operator/=(int x);
+
+    int dist(const Vec2 &v) const;
 };
 
 std::ostream &operator<<(std::ostream &os, const Vec2i &v);

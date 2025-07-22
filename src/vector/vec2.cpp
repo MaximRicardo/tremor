@@ -1,8 +1,14 @@
 #include "vec2.hpp"
+#include "vec3.hpp"
+#include <cmath>
 
 Vec2::Vec2() {};
+
 Vec2::Vec2(float x, float y) : x(x), y(y) {}
+
 Vec2::Vec2(const Vec2i &v) : x(v.x), y(v.y) {}
+
+Vec2::Vec2(const Vec3 &v) : x(v.x), y(v.y) {};
 
 Vec2 Vec2::operator+(const Vec2 &v) const
 {
@@ -58,6 +64,13 @@ Vec2 Vec2::mix(const Vec2 &v, float t) const
     return *this + (v - *this) * t;
 }
 
+float Vec2::dist(const Vec2 &v) const
+{
+    float diff_x = v.x - this->x;
+    float diff_y = v.y - this->y;
+    return std::sqrt(diff_x * diff_x + diff_y * diff_y);
+}
+
 Vec2i::Vec2i() {}
 Vec2i::Vec2i(int x, int y) : x(x), y(y) {}
 Vec2i::Vec2i(const Vec2 &v) : x(v.x), y(v.y) {}
@@ -104,6 +117,13 @@ Vec2i Vec2i::operator/=(int x)
 {
     *this = *this / x;
     return *this;
+}
+
+int Vec2i::dist(const Vec2 &v) const
+{
+    int diff_x = v.x - this->x;
+    int diff_y = v.y - this->y;
+    return std::sqrt(diff_x * diff_x + diff_y * diff_y);
 }
 
 std::ostream &operator<<(std::ostream &os, const Vec2 &v)

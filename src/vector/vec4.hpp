@@ -9,7 +9,7 @@ public:
 
     Vec4() = default;
     Vec4(float x, float y, float z, float w);
-    Vec4(Vec3 v, float w);
+    Vec4(const Vec3 &v, float w);
 
     static Vec4 zero();
 
