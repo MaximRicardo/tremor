@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aabb.hpp"
+#include "mat4x4.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <memory>
@@ -71,8 +72,9 @@ public:
 
     explicit BSP(std::span<const Triangle> tris);
 
-    void render(std::span<Color> frame, std::span<float> depth_buffer,
-                const Camera &cam, std::span<const Texture> texs) const;
+    void render(const Matrix4x4 &transform, std::span<Color> frame,
+                std::span<float> depth_buffer, const Camera &cam,
+                std::span<const Texture> texs) const;
     size_t n_triangles() const;
     size_t max_depth() const;
     bool is_leaf() const;

@@ -228,8 +228,10 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
-        // we're just doing depth-filling for now cuz the BSP already handles
-        // rendering everything correctly
+#ifndef m_DO_NOT_CHECK_DEPTH_BUFFER
+        if (depth_buffer[idx] < z)
+            continue;
+#endif
         depth_buffer[idx] = z;
 
         auto &tex = texs[tri.parent->tex_idx];

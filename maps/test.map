@@ -2,6 +2,7 @@
     "spawnflags" "0"
 
     "classname" "worldspawn"
+    "origin" "0 32 32"
 
     "asdfas" "blahblah"
     {

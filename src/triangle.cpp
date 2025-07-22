@@ -1,8 +1,10 @@
 #include "triangle.hpp"
 #include "camera.hpp"
 #include "constants.hpp"
+#include "mat4x4.hpp"
 #include "plane.hpp"
 #include "sub_triangle.hpp"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -69,19 +71,24 @@ Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
     : vs(vs), vts(vts), tex_idx(tex_idx)
 {}
 
-Triangle::ProjectRet Triangle::project(const Camera &cam) const
+Triangle::ProjectRet Triangle::project(const Matrix4x4 &transform,
+                                       const Camera &cam) const
 {
-    auto cam_vs = world_vs_to_camera(this->vs, cam);
+    std::array<Vec3, 3> transf_vs;
+    std::transform(
+        this->vs.begin(), this->vs.end(), transf_vs.begin(),
+        [transform](const Vec3 &v) { return transform * Vec4(v, 1.f); });
+    auto cam_vs = world_vs_to_camera(transf_vs, cam);
 
     return split_tri_with_near_plane(*this, cam_vs, cam);
 }
 
-void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,
-                      const Camera &cam,
+void Triangle::render(const Matrix4x4 &transform, std::span<Color> frame,
+                      std::span<float> depth_buffer, const Camera &cam,
                       const std::span<const Texture> texs) const
 {
     Triangle::ProjectRet project_ret;
-    project_ret = this->project(cam);
+    project_ret = this->project(transform, cam);
 
     for (unsigned i = 0; i < project_ret.n_sub_tris; i++) {
         project_ret.sub_tris[i].render(frame, depth_buffer, texs);
@@ -91,6 +98,16 @@ void Triangle::render(std::span<Color> frame, std::span<float> depth_buffer,
 Plane Triangle::get_plane() const
 {
     return Plane(this->vs);
+}
+
+Plane Triangle::get_plane(const Matrix4x4 &transform) const
+{
+    std::array<Vec3, 3> transf;
+    std::transform(
+        this->vs.begin(), this->vs.end(), transf.begin(),
+        [transform](const Vec3 &v) { return transform * Vec4(v, 1.f); });
+
+    return Plane(transf);
 }
 
 float Triangle::get_area() const

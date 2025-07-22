@@ -175,14 +175,15 @@ void BSP::fill_with_triangles(std::span<const Triangle> tris)
     }
 }
 
-void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
-                 const Camera &cam, std::span<const Texture> texs) const
+void BSP::render(const Matrix4x4 &transform, std::span<Color> frame,
+                 std::span<float> depth_buffer, const Camera &cam,
+                 std::span<const Texture> texs) const
 {
     if (this->is_leaf()) {
         for (const auto &tri : this->leaf_info().edge_tris) {
-            if (tri.get_plane().is_point_behind(cam.pos))
+            if (tri.get_plane(transform).is_point_behind(cam.pos))
                 continue;
-            tri.render(frame, depth_buffer, cam, texs);
+            tri.render(transform, frame, depth_buffer, cam, texs);
         }
         return;
     }
@@ -202,10 +203,10 @@ void BSP::render(std::span<Color> frame, std::span<float> depth_buffer,
     auto &last = cam_in_front ? this->in_front : this->behind;
 
     if (first)
-        first->render(frame, depth_buffer, cam, texs);
+        first->render(transform, frame, depth_buffer, cam, texs);
 
     if (last)
-        last->render(frame, depth_buffer, cam, texs);
+        last->render(transform, frame, depth_buffer, cam, texs);
 }
 
 size_t BSP::n_triangles() const

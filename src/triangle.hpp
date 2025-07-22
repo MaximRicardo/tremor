@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.hpp"
+#include "mat4x4.hpp"
 #include "sub_triangle.hpp"
 #include "texture.hpp"
 #include "vector/vec3.hpp"
@@ -22,7 +23,7 @@ public:
 private:
     // n_triangles              - the number of returned sub triangles.
     //                            can be set to 0, 1 or 2.
-    ProjectRet project(const Camera &cam) const;
+    ProjectRet project(const Matrix4x4 &transform, const Camera &cam) const;
 
 public:
     // vertices
@@ -35,10 +36,12 @@ public:
     Triangle();
     Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts, size_t tex_idx);
 
-    void render(std::span<Color> frame, std::span<float> depth_buffer,
-                const Camera &cam, std::span<const Texture> texs) const;
+    void render(const Matrix4x4 &tranform, std::span<Color> frame,
+                std::span<float> depth_buffer, const Camera &cam,
+                std::span<const Texture> texs) const;
 
     Plane get_plane() const;
+    Plane get_plane(const Matrix4x4 &transform) const;
     float get_area() const;
     bool is_degenerate() const;
 };

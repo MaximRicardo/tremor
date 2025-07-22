@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <istream>
 #include <iterator>
@@ -77,6 +78,8 @@ public:
     explicit Entity(std::ifstream &file);
 
     size_t get_info_idx(std::string_view key) const;
+    MapEntity to_map_entity() const;
+    Vec3 get_pos() const;
 };
 
 std::string whitespace = " \t";
@@ -108,14 +111,8 @@ EntityInfo::EntityInfo(std::string_view line)
 {
     std::istringstream stream((std::string(line)));
 
-    stream >> this->key;
-    stream >> this->value;
-
-    // remove the encasing double quotes
-    this->key.erase(this->key.begin());
-    this->key.erase(this->key.end() - 1);
-    this->value.erase(this->value.begin());
-    this->value.erase(this->value.end() - 1);
+    stream >> std::quoted(this->key);
+    stream >> std::quoted(this->value);
 }
 
 BrushPlane::BrushPlane(std::string_view line)
@@ -288,7 +285,37 @@ size_t Entity::get_info_idx(std::string_view key) const
     return SIZE_MAX;
 }
 
-std::vector<Triangle> read_file(std::ifstream &file)
+MapEntity Entity::to_map_entity() const
+{
+    std::vector<Triangle> tris;
+
+    for (const auto &brush : this->brushes) {
+        auto brush_tris = brush.get_tris();
+        tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
+    }
+
+    return MapEntity(tris, this->get_pos());
+}
+
+Vec3 Entity::get_pos() const
+{
+    size_t idx = this->get_info_idx("origin");
+    if (idx == SIZE_MAX)
+        return Vec3::zero();
+
+    std::stringstream s(this->info[idx].value);
+
+    Vec3 pos;
+    s >> pos.x;
+    s >> pos.y;
+    s >> pos.z;
+    std::cout << "key = '" << this->info[idx].key << "'\n";
+    std::cout << "value = '" << this->info[idx].value << "'\n";
+    std::cout << "pos = (" << pos << ")\n";
+    return pos;
+}
+
+Map read_file(std::ifstream &file)
 {
     std::vector<Entity> entities;
 
@@ -304,22 +331,20 @@ std::vector<Triangle> read_file(std::ifstream &file)
             entities.emplace_back(file);
     }
 
-    std::vector<Triangle> tris;
+    Map map;
 
     for (const auto &entity : entities) {
-        for (const auto &brush : entity.brushes) {
-            auto brush_tris = brush.get_tris();
-            tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
-        }
+        if (entity.brushes.empty())
+            continue;
+        map.entities.push_back(entity.to_map_entity());
     }
 
-    return tris;
+    return map;
 }
 
 } // namespace
 
-std::vector<Triangle>
-QuakeMapLoader::load_file(const std::filesystem::path &path)
+Map QuakeMapLoader::load_file(const std::filesystem::path &path)
 {
     std::ifstream file(path);
     if (file.fail()) {
@@ -327,7 +352,5 @@ QuakeMapLoader::load_file(const std::filesystem::path &path)
                                  ": " + std::strerror(errno));
     }
 
-    auto tris = read_file(file);
-
-    return tris;
+    return read_file(file);
 }

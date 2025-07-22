@@ -27,13 +27,11 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
-    auto tris = QuakeMapLoader::load_file("../maps/test.map");
-    // auto tris = ObjLoader::load_file("../objs/cube.obj");
-    BSP bsp(tris);
+    auto map = QuakeMapLoader::load_file("../maps/test.map");
+    BSP &worldspawn = map.entities[0].bsp;
 
-    std::cout << "original tri count is " << tris.size() << "\n";
-    std::cout << "bsp has " << bsp.n_triangles() << " tris\n";
-    std::cout << "bsp max depth is " << bsp.max_depth() << "\n";
+    std::cout << "map has " << map.n_triangles() << " tris\n";
+    std::cout << "worldspawn max depth is " << worldspawn.max_depth() << "\n";
 
     std::vector<Texture> texs;
     texs.emplace_back("../textures/img.png");
@@ -50,7 +48,7 @@ int main()
         prev_time = Time::get_ticks_ms();
 
         std::cout << "delta_time = " << delta_time << '\n';
-        bool cam_in_solid = bsp.point_in_solid(cam.pos);
+        bool cam_in_solid = worldspawn.point_in_solid(cam.pos);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 
         for (std::size_t i = 0; i < Res::size; i++) {
@@ -67,7 +65,7 @@ int main()
             tri.render(frame, depth_buffer, cam, texs);
         }
         */
-        bsp.render(frame, depth_buffer, cam, texs);
+        map.render(frame, depth_buffer, cam, texs);
 
         screen.update(frame.data());
     }
