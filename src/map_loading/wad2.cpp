@@ -26,18 +26,21 @@ std::string get_name(std::span<const uint8_t> data, size_t offset)
 } // namespace
 
 WAD::WAD2MipHeader::WAD2MipHeader(std::span<const uint8_t> data, size_t offset)
+    : own_offset(offset)
 {
-    this->name = get_name(data, offset + name_offset);
-    this->width = BinData::read_num<int32_t>(data, offset + width_offset);
-    this->height = BinData::read_num<int32_t>(data, offset + height_offset);
+    this->name = get_name(data, this->own_offset + name_offset);
+    this->width =
+        BinData::read_num<int32_t>(data, this->own_offset + width_offset);
+    this->height =
+        BinData::read_num<int32_t>(data, this->own_offset + height_offset);
     this->scale_1_pos =
-        BinData::read_num<int32_t>(data, offset + scale_1_pos_offset);
+        BinData::read_num<int32_t>(data, this->own_offset + scale_1_pos_offset);
     this->scale_2_pos =
-        BinData::read_num<int32_t>(data, offset + scale_2_pos_offset);
+        BinData::read_num<int32_t>(data, this->own_offset + scale_2_pos_offset);
     this->scale_4_pos =
-        BinData::read_num<int32_t>(data, offset + scale_4_pos_offset);
+        BinData::read_num<int32_t>(data, this->own_offset + scale_4_pos_offset);
     this->scale_8_pos =
-        BinData::read_num<int32_t>(data, offset + scale_8_pos_offset);
+        BinData::read_num<int32_t>(data, this->own_offset + scale_8_pos_offset);
 }
 
 std::vector<Color>
@@ -51,7 +54,8 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
     std::vector<Color> pixels;
     pixels.reserve(this->width * this->height);
 
-    size_t base_offset = this->scale_1_pos + 16;
+    size_t base_offset = this->scale_1_pos + 4 + this->own_offset;
+
     for (int32_t y = 0; y < this->height; ++y) {
         for (int32_t x = 0; x < this->width; ++x) {
             size_t offset = (this->width * y + x) + base_offset;
@@ -67,7 +71,7 @@ Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data,
                                        std::span<const Color> palette) const
 {
     return Texture(this->get_pixels(data, 0, palette), this->width,
-                   this->height);
+                   this->height, this->name);
 }
 
 WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)

@@ -2,8 +2,9 @@
 
 #include "color.hpp"
 #include <cstdint>
-#include <filesystem>
 #include <span>
+#include <string>
+#include <string_view>
 #include <vector>
 
 class Texture {
@@ -12,11 +13,13 @@ class Texture {
     uint32_t width;
     uint32_t height;
 
-    void load(const std::filesystem::path &path);
+    // void load(const std::filesystem::path &path);
 
 public:
-    Texture(const std::filesystem::path &path);
-    Texture(std::span<const Color> pixels, uint32_t width, uint32_t height);
+    std::string name;
+
+    Texture(std::span<const Color> pixels, uint32_t width, uint32_t height,
+            std::string_view name);
 
     const std::vector<Color> &get_pixels() const;
     uint32_t get_width() const;

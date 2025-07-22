@@ -4,14 +4,17 @@
 #include "../constants.hpp"
 #include "../plane.hpp"
 #include "../shape.hpp"
+#include "wad.hpp"
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <istream>
 #include <iterator>
+#include <span>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -36,6 +39,7 @@ public:
 
     Plane get_plane() const;
     Vec2 get_point_tex_coord(const Vec3 &p) const;
+    size_t get_tex_idx(std::span<const Texture> textures) const;
 };
 
 class Brush {
@@ -51,7 +55,7 @@ public:
 
     Brush(std::ifstream &file);
 
-    std::vector<Triangle> get_tris() const;
+    std::vector<Triangle> get_tris(std::span<const Texture> textures) const;
 };
 
 // represents a key value pair in an entity
@@ -77,7 +81,7 @@ public:
     explicit Entity(std::ifstream &file);
 
     size_t get_info_idx(std::string_view key) const;
-    MapEntity to_map_entity() const;
+    MapEntity to_map_entity(std::span<const Texture> textures) const;
     Vec3 get_pos() const;
 };
 
@@ -178,6 +182,16 @@ Vec2 BrushPlane::get_point_tex_coord(const Vec3 &p) const
     return tex;
 }
 
+size_t BrushPlane::get_tex_idx(std::span<const Texture> textures) const
+{
+    for (auto it = textures.begin(); it < textures.end(); ++it) {
+        if (it->name == this->texture)
+            return std::distance(textures.begin(), it);
+    }
+
+    return SIZE_MAX;
+}
+
 Brush::Brush(std::ifstream &file)
 {
     std::string line;
@@ -222,7 +236,7 @@ ConvexShape Brush::get_shape() const
     return shape;
 }
 
-std::vector<Triangle> Brush::get_tris() const
+std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
 {
     std::vector<Triangle> tris;
 
@@ -232,11 +246,17 @@ std::vector<Triangle> Brush::get_tris() const
         const BrushPlane *plane = this->poly_plane(poly);
         assert(plane);
 
+        size_t tex_idx = plane->get_tex_idx(textures);
+        assert(tex_idx != SIZE_MAX);
+
+        std::cout << "tex idx = " << tex_idx << "\n";
+
         auto poly_tris = poly.get_triangles();
         for (auto &tri : poly_tris) {
             for (size_t i = 0; i < tri.vs.size(); ++i) {
                 tri.vts[i] = plane->get_point_tex_coord(tri.vs[i]);
             }
+            tri.tex_idx = tex_idx;
         }
 
         tris.insert(tris.end(), poly_tris.begin(), poly_tris.end());
@@ -283,12 +303,12 @@ size_t Entity::get_info_idx(std::string_view key) const
     return SIZE_MAX;
 }
 
-MapEntity Entity::to_map_entity() const
+MapEntity Entity::to_map_entity(std::span<const Texture> textures) const
 {
     std::vector<Triangle> tris;
 
     for (const auto &brush : this->brushes) {
-        auto brush_tris = brush.get_tris();
+        auto brush_tris = brush.get_tris(textures);
         tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
     }
 
@@ -310,7 +330,7 @@ Vec3 Entity::get_pos() const
     return pos;
 }
 
-Map read_file(std::ifstream &file)
+Map read_file(std::ifstream &file, std::filesystem::path path)
 {
     std::vector<Entity> entities;
 
@@ -326,12 +346,20 @@ Map read_file(std::ifstream &file)
             entities.emplace_back(file);
     }
 
+    if (entities.empty())
+        throw std::runtime_error("error: .map file '" + path.string() +
+                                 "' is empty.");
+
     Map map;
+
+    std::filesystem::path wad_path =
+        entities[0].info[entities[0].get_info_idx("wad")].value;
+    map.textures = WAD::load_file(path.remove_filename() / wad_path);
 
     for (const auto &entity : entities) {
         if (entity.brushes.empty())
             continue;
-        map.entities.push_back(entity.to_map_entity());
+        map.entities.push_back(entity.to_map_entity(map.textures));
     }
 
     return map;
@@ -347,5 +375,5 @@ Map QuakeMapLoader::load_file(const std::filesystem::path &path)
                                  ": " + std::strerror(errno));
     }
 
-    return read_file(file);
+    return read_file(file, path);
 }

@@ -20,13 +20,17 @@ public:
     int32_t width;
     int32_t height;
 
-    // i honestly have no idea what these do
-    // it doesn't seem like they're pointers to the mip map level info? if they
-    // are, scale_1_pos seems to be 16 bytes behind where it should be.
+    // ok, so it seems like these point to the location of the specific mipmap
+    // level's info, subtracted by 4, subtracted by own_offset.
+    // so scale_1_pos = mipmap_texel_data_offset - 4 - own_offset
+    // if ur wondering why tf this is, dw, i'm wondering the exact same thing.
     int32_t scale_1_pos;
     int32_t scale_2_pos;
     int32_t scale_4_pos;
     int32_t scale_8_pos;
+
+    // offset of the header itself
+    int32_t own_offset;
 
     static constexpr size_t name_offset = 0;
     static constexpr size_t width_offset = 16;

@@ -2,7 +2,6 @@
 #include "camera.hpp"
 #include "color.hpp"
 #include "map_loading/quake_map.hpp"
-#include "map_loading/wad.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
@@ -32,7 +31,6 @@ int main()
               << "\n";
 
     // map.textures.emplace_back("../textures/img.png");
-    map.textures = WAD::load_file("../maps/kdmtex.wad");
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {

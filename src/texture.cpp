@@ -4,22 +4,17 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
-#include <stdexcept>
-#include <string>
+#include <string_view>
 #include <vector>
 
-Texture::Texture(const std::filesystem::path &path)
-{
-    this->load(path);
-}
-
-Texture::Texture(std::span<const Color> pixels, uint32_t width, uint32_t height)
-    : width(width), height(height)
+Texture::Texture(std::span<const Color> pixels, uint32_t width, uint32_t height,
+                 std::string_view name)
+    : width(width), height(height), name(std::string(name))
 {
     this->pixels.assign(pixels.begin(), pixels.end());
 }
 
+#ifdef m_COMMENT
 void Texture::load(const std::filesystem::path &path)
 {
     std::ifstream file(path, std::ios::binary);
@@ -47,6 +42,7 @@ void Texture::load(const std::filesystem::path &path)
 
     free(data);
 }
+#endif
 
 const std::vector<Color> &Texture::get_pixels() const
 {
