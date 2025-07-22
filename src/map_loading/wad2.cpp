@@ -72,6 +72,7 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
     pixels.reserve(this->width * this->height);
 
     size_t base_offset = this->mipmap_lvl_pos(mipmap_lvl) + this->own_offset;
+    // might be necessary?
     // base_offset += (this->n_mipmap_lvls - mipmap_lvl - 1) * 4;
 
     int32_t mipmap_width = this->width >> mipmap_lvl;
@@ -91,8 +92,10 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
 
 Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data) const
 {
-    std::array<MipMapLevel, n_mipmap_lvls> mipmaps;
-    for (size_t i = 0; i < this->n_mipmap_lvls; ++i) {
+    assert(Texture::n_mipmap_lvls <= this->n_mipmap_lvls);
+
+    std::array<MipMapLevel, Texture::n_mipmap_lvls> mipmaps;
+    for (size_t i = 0; i < mipmaps.size(); ++i) {
         mipmaps[i] = MipMapLevel(this->get_pixels(data, i));
     }
 
