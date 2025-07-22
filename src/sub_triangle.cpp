@@ -1,6 +1,5 @@
 #include "sub_triangle.hpp"
 #include "camera.hpp"
-#include "constants.hpp"
 #include "index.hpp"
 #include "palette.hpp"
 #include "resolution.hpp"
@@ -11,9 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <span>
@@ -206,6 +203,7 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
     return tx;
 }
 
+/*
 int32_t tri_2d_area(std::span<const Vec2i> vs)
 {
     // heron's formula
@@ -218,6 +216,7 @@ int32_t tri_2d_area(std::span<const Vec2i> vs)
 
     return std::sqrt(s * (s - a) * (s - b) * (s - c));
 }
+*/
 
 float tri_2d_area(std::span<const Vec2> vs)
 {
