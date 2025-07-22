@@ -42,11 +42,9 @@ public:
 
     WAD2MipHeader(std::span<const uint8_t> data, size_t offset);
 
-    std::vector<Color> get_pixels(std::span<const uint8_t> data,
-                                  unsigned mipmap_lvl,
-                                  std::span<const Color> palette) const;
-    Texture to_texture(std::span<const uint8_t> data,
-                       std::span<const Color> palette) const;
+    std::vector<uint8_t> get_pixels(std::span<const uint8_t> data,
+                                    unsigned mipmap_lvl) const;
+    Texture to_texture(std::span<const uint8_t> data) const;
 };
 
 class WAD2Header : public Header {
@@ -79,29 +77,23 @@ public:
     static constexpr size_t entry_offset_inc = 32;
 
     // meaning of the values type can have
-    static constexpr int8_t color_palette_type = '@';
-    static constexpr int8_t status_bar_type = 'B'; // pics for status bar
-    static constexpr int8_t mip_tex_type = 'D';    // honestly not sure yet, i'm
-                                                   // guessing a tex to which
-                                                   // should be mipmapped?
+    static constexpr int8_t color_palette_type = '@'; // not supported btw
+    static constexpr int8_t status_bar_type = 'B';    // pics for status bar
+    static constexpr int8_t mip_tex_type = 'D'; // honestly not sure yet, i'm
+                                                // guessing a tex to which
+                                                // should be mipmapped?
     static constexpr int8_t console_pic_type = 'E'; // idk
 
     WAD2Entry(std::span<const uint8_t> data, size_t offset);
 
-    // ASSUMES THE ENTRY IS A PALETTE
-    std::vector<Color> read_palette(std::span<const uint8_t> data) const;
     // ASSUMES THE ENTRY IS A MIP TEX
     WAD2MipHeader read_mip_tex(std::span<const uint8_t> data) const;
 };
 
 class WAD2Dir {
 
-    void set_default_palette();
-    void get_palette(std::span<const uint8_t> data);
-
 public:
     std::vector<WAD2Entry> entries;
-    std::vector<Color> palette;
 
     WAD2Dir(const WAD2Header &header, std::span<const uint8_t> data);
 

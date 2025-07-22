@@ -2,8 +2,10 @@
 
 #include "color.hpp"
 #include <vector>
+
 namespace Palette {
 
-std::vector<Color> get_default();
+// contains exactly 256 colors
+extern std::vector<Color> palette;
 
-}
+} // namespace Palette

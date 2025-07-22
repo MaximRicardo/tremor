@@ -1,6 +1,8 @@
 #include "palette.hpp"
 
-std::vector<Color> Palette::get_default()
+namespace {
+
+std::vector<Color> get_default()
 {
     return {
         Color(0, 0, 0),       Color(15, 15, 15),    Color(31, 31, 31),
@@ -91,3 +93,7 @@ std::vector<Color> Palette::get_default()
         Color(159, 91, 83),
     };
 }
+
+} // namespace
+
+std::vector<Color> Palette::palette = get_default();

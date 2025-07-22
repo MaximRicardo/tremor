@@ -1,6 +1,7 @@
 #include "sub_triangle.hpp"
 #include "camera.hpp"
 #include "index.hpp"
+#include "palette.hpp"
 #include "resolution.hpp"
 #include "texture.hpp"
 #include "triangle.hpp"
@@ -10,7 +11,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
-#include <iostream>
 #include <limits>
 #include <memory>
 
@@ -238,7 +238,7 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
         auto texel_coord = get_tex_coords(tri, bary_coords, z, tex);
         size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width());
 
-        frame[idx] = tex.get_pixels()[texel];
+        frame[idx] = Palette::palette[tex.get_pixels()[texel]];
     }
 }
 

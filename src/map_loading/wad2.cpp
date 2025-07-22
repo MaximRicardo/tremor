@@ -1,5 +1,4 @@
 #include "wad2.hpp"
-#include "../palette.hpp"
 #include "../utils/bin_data.hpp"
 #include "wad.hpp"
 #include <cassert>
@@ -43,15 +42,14 @@ WAD::WAD2MipHeader::WAD2MipHeader(std::span<const uint8_t> data, size_t offset)
         BinData::read_num<int32_t>(data, this->own_offset + scale_8_pos_offset);
 }
 
-std::vector<Color>
+std::vector<uint8_t>
 WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
-                               unsigned mipmap_lvl,
-                               std::span<const Color> palette) const
+                               unsigned mipmap_lvl) const
 {
     // only the first mipmap is supported rn
     assert(mipmap_lvl == 0);
 
-    std::vector<Color> pixels;
+    std::vector<uint8_t> pixels;
     pixels.reserve(this->width * this->height);
 
     size_t base_offset = this->scale_1_pos + 4 + this->own_offset;
@@ -60,18 +58,17 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
         for (int32_t x = 0; x < this->width; ++x) {
             size_t offset = (this->width * y + x) + base_offset;
             uint8_t idx = BinData::read_num<uint8_t>(data, offset);
-            pixels.push_back(palette[idx]);
+            pixels.push_back(idx);
         }
     }
 
     return pixels;
 }
 
-Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data,
-                                       std::span<const Color> palette) const
+Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data) const
 {
-    return Texture(this->get_pixels(data, 0, palette), this->width,
-                   this->height, this->name);
+    return Texture(this->get_pixels(data, 0), this->width, this->height,
+                   this->name);
 }
 
 WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)
@@ -88,26 +85,6 @@ WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)
     if (this->is_comprsd)
         throw std::runtime_error(
             "error: compressed WAD2 entries are not supported.");
-}
-
-std::vector<Color>
-WAD::WAD2Entry::read_palette(std::span<const uint8_t> data) const
-{
-    assert(this->type == this->color_palette_type);
-
-    std::vector<Color> palette;
-
-    // entries in the color palette are stored as RGB8
-    size_t color_size = sizeof(uint8_t) * 3;
-    for (size_t offset = this->offset;
-         offset < static_cast<size_t>(this->d_size); offset += color_size) {
-        int8_t r = BinData::read_num<int8_t>(data, offset);
-        int8_t g = BinData::read_num<int8_t>(data, offset + 1);
-        int8_t b = BinData::read_num<int8_t>(data, offset + 2);
-        palette.emplace_back(r, g, b);
-    }
-
-    return palette;
 }
 
 WAD::WAD2MipHeader
@@ -137,32 +114,6 @@ WAD::WAD2Dir::WAD2Dir(const WAD2Header &header, std::span<const uint8_t> data)
         this->entries.emplace_back(data, offset);
         offset += WAD::WAD2Entry::entry_offset_inc;
     }
-
-    this->get_palette(data);
-}
-
-void WAD::WAD2Dir::set_default_palette()
-{
-    this->palette = Palette::get_default();
-}
-
-void WAD::WAD2Dir::get_palette(std::span<const uint8_t> data)
-{
-    for (const auto &entry : this->entries) {
-        std::cout << "entry type = " << static_cast<char>(entry.type) << "\n";
-        if (entry.type != WAD2Entry::color_palette_type)
-            continue;
-
-        auto entry_p = entry.read_palette(data);
-
-        // i dunno if ur supposed to just append multiple palettes, but i'ma
-        // do that until i find out i'm wrong
-        this->palette.insert(this->palette.end(), entry_p.begin(),
-                             entry_p.end());
-    }
-
-    if (this->palette.empty())
-        this->set_default_palette();
 }
 
 std::vector<Texture>
@@ -174,8 +125,7 @@ WAD::WAD2Dir::get_textures(std::span<const uint8_t> data) const
         if (entry.type != WAD2Entry::mip_tex_type)
             continue;
 
-        texs.push_back(
-            entry.read_mip_tex(data).to_texture(data, this->palette));
+        texs.push_back(entry.read_mip_tex(data).to_texture(data));
     }
 
     return texs;
