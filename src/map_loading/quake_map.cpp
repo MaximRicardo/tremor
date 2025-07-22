@@ -10,7 +10,6 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <istream>
 #include <iterator>
 #include <sstream>
@@ -237,7 +236,6 @@ std::vector<Triangle> Brush::get_tris() const
         for (auto &tri : poly_tris) {
             for (size_t i = 0; i < tri.vs.size(); ++i) {
                 tri.vts[i] = plane->get_point_tex_coord(tri.vs[i]);
-                std::cout << "vts[i] = (" << tri.vts[i] << ")\n";
             }
         }
 
@@ -309,9 +307,6 @@ Vec3 Entity::get_pos() const
     s >> pos.x;
     s >> pos.y;
     s >> pos.z;
-    std::cout << "key = '" << this->info[idx].key << "'\n";
-    std::cout << "value = '" << this->info[idx].value << "'\n";
-    std::cout << "pos = (" << pos << ")\n";
     return pos;
 }
 

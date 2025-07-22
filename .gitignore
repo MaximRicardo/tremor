@@ -1,5 +1,6 @@
 bin/
 textures/
+maps/*.wad
 
 CMakeCache.txt
 CMakeFiles/

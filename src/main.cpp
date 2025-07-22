@@ -2,12 +2,12 @@
 #include "camera.hpp"
 #include "color.hpp"
 #include "map_loading/quake_map.hpp"
+#include "map_loading/wad.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 #include <vector>
 
@@ -31,7 +31,8 @@ int main()
     std::cout << "worldspawn max depth is " << worldspawn.bsp.max_depth()
               << "\n";
 
-    map.textures.emplace_back("../textures/img.png");
+    // map.textures.emplace_back("../textures/img.png");
+    map.textures = WAD::load_file("../maps/kdmtex.wad");
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {

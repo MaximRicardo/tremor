@@ -3,6 +3,7 @@
 #include "color.hpp"
 #include <cstdint>
 #include <filesystem>
+#include <span>
 #include <vector>
 
 class Texture {
@@ -15,6 +16,7 @@ class Texture {
 
 public:
     Texture(const std::filesystem::path &path);
+    Texture(std::span<const Color> pixels, uint32_t width, uint32_t height);
 
     const std::vector<Color> &get_pixels() const;
     uint32_t get_width() const;

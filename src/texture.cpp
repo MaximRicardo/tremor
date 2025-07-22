@@ -14,6 +14,12 @@ Texture::Texture(const std::filesystem::path &path)
     this->load(path);
 }
 
+Texture::Texture(std::span<const Color> pixels, uint32_t width, uint32_t height)
+    : width(width), height(height)
+{
+    this->pixels.assign(pixels.begin(), pixels.end());
+}
+
 void Texture::load(const std::filesystem::path &path)
 {
     std::ifstream file(path, std::ios::binary);
