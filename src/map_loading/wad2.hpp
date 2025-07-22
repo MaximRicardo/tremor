@@ -35,17 +35,17 @@ public:
     // offset of the header itself
     int32_t own_offset;
 
-    static constexpr size_t name_offset = 0;
-    static constexpr size_t width_offset = 16;
-    static constexpr size_t height_offset = 20;
-    static constexpr size_t scale_1_pos_offset = 24;
-    static constexpr size_t scale_2_pos_offset = 28;
-    static constexpr size_t scale_4_pos_offset = 32;
-    static constexpr size_t scale_8_pos_offset = 36;
+    static constexpr int32_t name_offset = 0;
+    static constexpr int32_t width_offset = 16;
+    static constexpr int32_t height_offset = 20;
+    static constexpr int32_t scale_1_pos_offset = 24;
+    static constexpr int32_t scale_2_pos_offset = 28;
+    static constexpr int32_t scale_4_pos_offset = 32;
+    static constexpr int32_t scale_8_pos_offset = 36;
 
-    static constexpr size_t n_mipmap_lvls = 4;
+    static constexpr int32_t n_mipmap_lvls = 4;
 
-    WAD2MipHeader(std::span<const uint8_t> data, size_t offset);
+    WAD2MipHeader(std::span<const uint8_t> data, int32_t offset);
 
     std::vector<uint8_t> get_pixels(std::span<const uint8_t> data,
                                     unsigned mipmap_lvl) const;
@@ -55,7 +55,7 @@ public:
 class WAD2Header : public Header {
 
 public:
-    WAD2Header(std::span<const uint8_t> data, size_t offset);
+    WAD2Header(std::span<const uint8_t> data, int32_t offset);
 };
 
 class WAD2Entry {
@@ -70,16 +70,16 @@ public:
     std::string name; // up to wad2_max_tex_name length (including '\0')
 
     // offsets of each member in the file, from the base of the entry
-    static constexpr size_t offset_offset = 0; // lol
-    static constexpr size_t d_size_offset = 4;
-    static constexpr size_t size_offset = 8;
-    static constexpr size_t type_offset = 12;
-    static constexpr size_t is_comprsd_offset = 13;
-    static constexpr size_t unused_offset = 14;
-    static constexpr size_t name_offset = 16;
+    static constexpr int32_t offset_offset = 0; // lol
+    static constexpr int32_t d_size_offset = 4;
+    static constexpr int32_t size_offset = 8;
+    static constexpr int32_t type_offset = 12;
+    static constexpr int32_t is_comprsd_offset = 13;
+    static constexpr int32_t unused_offset = 14;
+    static constexpr int32_t name_offset = 16;
 
     // each entry takes up exactly 32 bytes in the file
-    static constexpr size_t entry_offset_inc = 32;
+    static constexpr int32_t entry_offset_inc = 32;
 
     // meaning of the values type can have
     static constexpr int8_t color_palette_type = '@'; // not supported btw
@@ -89,7 +89,7 @@ public:
                                                 // should be mipmapped?
     static constexpr int8_t console_pic_type = 'E'; // idk
 
-    WAD2Entry(std::span<const uint8_t> data, size_t offset);
+    WAD2Entry(std::span<const uint8_t> data, int32_t offset);
 
     // ASSUMES THE ENTRY IS A MIP TEX
     WAD2MipHeader read_mip_tex(std::span<const uint8_t> data) const;

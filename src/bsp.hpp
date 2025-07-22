@@ -4,6 +4,7 @@
 #include "mat4x4.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
+#include <cstdint>
 #include <memory>
 #include <span>
 #include <variant>
@@ -77,8 +78,8 @@ public:
     void render(const MapEntity &parent_entity, std::span<Color> frame,
                 std::span<float> depth_buffer, const Camera &cam,
                 std::span<const Texture> texs) const;
-    size_t n_triangles() const;
-    size_t max_depth() const;
+    int32_t n_triangles() const;
+    int32_t max_depth() const;
     bool is_leaf() const;
     // get the leaf node a point is in
     const BSP &get_point_node(const Vec3 &point,

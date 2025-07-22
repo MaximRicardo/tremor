@@ -13,10 +13,10 @@
 namespace {
 
 // offset is the offset of the name in the file
-std::string get_name(std::span<const uint8_t> data, size_t offset)
+std::string get_name(std::span<const uint8_t> data, int32_t offset)
 {
     std::string name;
-    for (size_t i = offset; data[i] != '\0'; ++i) {
+    for (int32_t i = offset; data[i] != '\0'; ++i) {
         name.push_back(data[i]);
     }
 
@@ -25,7 +25,7 @@ std::string get_name(std::span<const uint8_t> data, size_t offset)
 
 } // namespace
 
-WAD::WAD2MipHeader::WAD2MipHeader(std::span<const uint8_t> data, size_t offset)
+WAD::WAD2MipHeader::WAD2MipHeader(std::span<const uint8_t> data, int32_t offset)
     : own_offset(offset)
 {
     this->name = get_name(data, this->own_offset + name_offset);
@@ -71,7 +71,7 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
     std::vector<uint8_t> pixels;
     pixels.reserve(this->width * this->height);
 
-    size_t base_offset = this->mipmap_lvl_pos(mipmap_lvl) + this->own_offset;
+    int32_t base_offset = this->mipmap_lvl_pos(mipmap_lvl) + this->own_offset;
     // might be necessary?
     // base_offset += (this->n_mipmap_lvls - mipmap_lvl - 1) * 4;
 
@@ -80,7 +80,7 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
 
     for (int32_t y = 0; y < mipmap_width; ++y) {
         for (int32_t x = 0; x < mipmap_height; ++x) {
-            size_t offset =
+            int32_t offset =
                 Index::conv_2d_to_1d(Vec2i(x, y), mipmap_width) + base_offset;
             uint8_t idx = BinData::read_num<uint8_t>(data, offset);
             pixels.push_back(idx);
@@ -102,7 +102,7 @@ Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data) const
     return Texture(mipmaps, this->width, this->height, this->name);
 }
 
-WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)
+WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, int32_t offset)
 {
     this->offset = BinData::read_num<int32_t>(data, offset + offset_offset);
     this->d_size = BinData::read_num<int32_t>(data, offset + d_size_offset);
@@ -135,7 +135,7 @@ WAD::WAD2Dir::WAD2Dir(const WAD2Header &header, std::span<const uint8_t> data)
 {
     this->entries.reserve(header.n_entries);
 
-    size_t offset = header.dir_offset;
+    int32_t offset = header.dir_offset;
     for (int32_t i = 0; i < header.n_entries; ++i) {
         this->entries.emplace_back(data, offset);
         offset += WAD::WAD2Entry::entry_offset_inc;
@@ -157,7 +157,7 @@ WAD::WAD2Dir::get_textures(std::span<const uint8_t> data) const
     return texs;
 }
 
-WAD::WAD2Header::WAD2Header(std::span<const uint8_t> data, size_t offset)
+WAD::WAD2Header::WAD2Header(std::span<const uint8_t> data, int32_t offset)
     : Header(data, offset)
 {}
 

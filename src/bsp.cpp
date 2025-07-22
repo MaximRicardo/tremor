@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -213,12 +214,12 @@ void BSP::render(const MapEntity &parent, std::span<Color> frame,
         last->render(parent, frame, depth_buffer, cam, texs);
 }
 
-size_t BSP::n_triangles() const
+int32_t BSP::n_triangles() const
 {
     if (this->is_leaf())
         return this->leaf_info().edge_tris.size();
 
-    size_t count = 0;
+    int32_t count = 0;
 
     count += this->behind->n_triangles();
     count += this->in_front->n_triangles();
@@ -226,7 +227,7 @@ size_t BSP::n_triangles() const
     return count;
 }
 
-size_t BSP::max_depth() const
+int32_t BSP::max_depth() const
 {
     if (this->is_leaf())
         return 1;
