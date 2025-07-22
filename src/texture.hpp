@@ -39,4 +39,5 @@ public:
     const std::vector<uint8_t> &get_pixels(size_t mipmap_lvl) const;
     uint32_t get_width(size_t mipmap_lvl) const;
     uint32_t get_height(size_t mipmap_lvl) const;
+    uint32_t n_pixels(size_t mipmap_lvl) const;
 };

@@ -1,5 +1,6 @@
 #include "sub_triangle.hpp"
 #include "camera.hpp"
+#include "constants.hpp"
 #include "index.hpp"
 #include "palette.hpp"
 #include "resolution.hpp"
@@ -10,9 +11,12 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
+#include <iostream>
 #include <limits>
 #include <memory>
+#include <span>
 
 namespace {
 
@@ -88,12 +92,13 @@ void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
     for (;;) { /* loop */
 
         size_t idx = start.y - edges.y_offset;
-        assert(idx < edges.n_edges);
 
-        if (start.x < edges.starts[idx])
-            edges.starts[idx] = start.x;
-        if (start.x > edges.ends[idx])
-            edges.ends[idx] = start.x;
+        if (idx < edges.n_edges) {
+            if (start.x < edges.starts[idx])
+                edges.starts[idx] = start.x;
+            if (start.x > edges.ends[idx])
+                edges.ends[idx] = start.x;
+        }
 
         if (start.x == end.x && start.y == end.y)
             break;
@@ -116,17 +121,13 @@ TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
     int y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
     int y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
 
-    // this optimization crashes the renderer so i'ma just keep this here til
-    // i get around to figuring out why.
-    /*
+    // skip any edges outside the screen
     if (y_max < 0 || y_min >= static_cast<int>(Res::height)) {
         edges.n_edges = 0;
         return edges;
     }
-
     y_min = std::max(y_min, 0);
     y_max = std::min(y_max, static_cast<int>(Res::height - 1));
-    */
 
     edges.y_offset = y_min;
     edges.n_edges = y_max - y_min + 1;
@@ -205,6 +206,72 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
     return tx;
 }
 
+int32_t tri_2d_area(std::span<const Vec2i> vs)
+{
+    // heron's formula
+
+    int32_t a = vs[0].dist(vs[1]);
+    int32_t b = vs[1].dist(vs[2]);
+    int32_t c = vs[2].dist(vs[0]);
+
+    int32_t s = (a + b + c) / 2;
+
+    return std::sqrt(s * (s - a) * (s - b) * (s - c));
+}
+
+float tri_2d_area(std::span<const Vec2> vs)
+{
+    // heron's formula
+
+    float a = vs[0].dist(vs[1]);
+    float b = vs[1].dist(vs[2]);
+    float c = vs[2].dist(vs[0]);
+
+    float s = (a + b + c) / 2;
+
+    return std::sqrt(s * (s - a) * (s - b) * (s - c));
+}
+
+size_t select_mipmap(const SubTriangle &tri, const Texture &tex)
+{
+    // temporary solution
+
+    float ratio = Res::size / (tex.n_pixels(0) * tri.tex_space_area() * 2.f);
+    float avrg_z = (tri.vs[0].z + tri.vs[1].z + tri.vs[2].z) / 3.f;
+
+    size_t lvl;
+    // these values were eyeballed and could probably be improved
+    float mult = 7.f;
+    if (avrg_z < 1.5f * ratio * mult)
+        lvl = 0;
+    else if (avrg_z < 3.5f * ratio * mult)
+        lvl = 1;
+    else if (avrg_z < 12.f * ratio * mult)
+        lvl = 2;
+    else
+        lvl = 3;
+
+    return std::min(lvl, tex.n_mipmap_lvls);
+
+    // can't manage to get this to work
+
+    /*
+    int32_t area = tri_2d_area(tri.get_screen_vs());
+
+    float ratio = static_cast<float>(area) / tri.tex_space_area() /
+                  (static_cast<float>(Res::size));
+
+    if (ratio > 0.5f)
+        return 0;
+    else if (ratio > 0.1f)
+        return 1;
+    else if (ratio > 0.01f)
+        return 2;
+    else
+        return 3;
+    */
+}
+
 //
 // tri               - the triangle the line belongs to
 void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
@@ -236,14 +303,13 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
 #endif
         depth_buffer[idx] = z;
 
-        size_t mipmap_lvl = 2;
-
         auto &tex = texs[tri.parent->tex_idx];
-        auto texel_coord = get_tex_coords(tri, bary_coords, z, tex, mipmap_lvl);
-        size_t texel =
-            Index::conv_2d_to_1d(texel_coord, tex.get_width(mipmap_lvl));
 
-        frame[idx] = Palette::palette[tex.get_pixels(mipmap_lvl)[texel]];
+        size_t mipmap = select_mipmap(tri, tex);
+        auto texel_coord = get_tex_coords(tri, bary_coords, z, tex, mipmap);
+        size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width(mipmap));
+
+        frame[idx] = Palette::palette[tex.get_pixels(mipmap)[texel]];
     }
 }
 
@@ -275,4 +341,9 @@ void SubTriangle::render(std::span<Color> frame, std::span<float> depth_buffer,
         render_horizontal_line(y, edges.starts[i], edges.ends[i], frame,
                                depth_buffer, *this, texs);
     }
+}
+
+float SubTriangle::tex_space_area() const
+{
+    return tri_2d_area(this->vts);
 }

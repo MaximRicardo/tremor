@@ -37,3 +37,8 @@ uint32_t Texture::get_height(size_t mipmap_lvl) const
 {
     return this->height >> mipmap_lvl;
 }
+
+uint32_t Texture::n_pixels(size_t mipmap_lvl) const
+{
+    return this->get_width(mipmap_lvl) * this->get_height(mipmap_lvl);
+}
