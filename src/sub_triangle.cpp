@@ -174,7 +174,7 @@ float interpolate_z(const SubTriangle &tri, const Vec3 &bary_coords)
 }
 
 Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
-                     const Texture &tex)
+                     const Texture &tex, size_t mipmap_lvl)
 {
     assert(tri.vs[0].z != 0.f);
     assert(tri.vs[1].z != 0.f);
@@ -194,11 +194,13 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
     // down instead of up.
     p_tex_coord.y = 1.f - p_tex_coord.y;
 
-    Vec2i tx = Vec2i(p_tex_coord.x * tex.get_width(),
-                     p_tex_coord.y * tex.get_height());
+    Vec2i tx = Vec2i(p_tex_coord.x * tex.get_width(mipmap_lvl),
+                     p_tex_coord.y * tex.get_height(mipmap_lvl));
 
-    tx.x = std::max(0, std::min(static_cast<int>(tex.get_width() - 1), tx.x));
-    tx.y = std::max(0, std::min(static_cast<int>(tex.get_height() - 1), tx.y));
+    tx.x = std::max(
+        0, std::min(static_cast<int>(tex.get_width(mipmap_lvl) - 1), tx.x));
+    tx.y = std::max(
+        0, std::min(static_cast<int>(tex.get_height(mipmap_lvl) - 1), tx.y));
 
     return tx;
 }
@@ -234,11 +236,14 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
 #endif
         depth_buffer[idx] = z;
 
-        auto &tex = texs[tri.parent->tex_idx];
-        auto texel_coord = get_tex_coords(tri, bary_coords, z, tex);
-        size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width());
+        size_t mipmap_lvl = 2;
 
-        frame[idx] = Palette::palette[tex.get_pixels()[texel]];
+        auto &tex = texs[tri.parent->tex_idx];
+        auto texel_coord = get_tex_coords(tri, bary_coords, z, tex, mipmap_lvl);
+        size_t texel =
+            Index::conv_2d_to_1d(texel_coord, tex.get_width(mipmap_lvl));
+
+        frame[idx] = Palette::palette[tex.get_pixels(mipmap_lvl)[texel]];
     }
 }
 

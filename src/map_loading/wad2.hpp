@@ -14,6 +14,9 @@ constexpr size_t wad2_max_tex_name = 16;
 
 class WAD2MipHeader {
 
+    // selects from the scale_n_pos's
+    int32_t mipmap_lvl_pos(unsigned lvl) const;
+
 public:
     // should be the same as the texture's corresponding entry's name
     std::string name;
@@ -21,9 +24,9 @@ public:
     int32_t height;
 
     // ok, so it seems like these point to the location of the specific mipmap
-    // level's info, subtracted by 4, subtracted by own_offset.
-    // so scale_1_pos = mipmap_texel_data_offset - 4 - own_offset
-    // if ur wondering why tf this is, dw, i'm wondering the exact same thing.
+    // level's info, subtracted by own_offset.
+    // so scale_1_pos = mipmap_texel_data_offset - own_offset
+    // i'm suspicious of scale_1_pos being behind by 16 bytes tho
     int32_t scale_1_pos;
     int32_t scale_2_pos;
     int32_t scale_4_pos;
@@ -39,6 +42,8 @@ public:
     static constexpr size_t scale_2_pos_offset = 28;
     static constexpr size_t scale_4_pos_offset = 32;
     static constexpr size_t scale_8_pos_offset = 36;
+
+    static constexpr size_t n_mipmap_lvls = 4;
 
     WAD2MipHeader(std::span<const uint8_t> data, size_t offset);
 

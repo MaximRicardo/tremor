@@ -1,6 +1,8 @@
 #include "wad2.hpp"
+#include "../index.hpp"
 #include "../utils/bin_data.hpp"
 #include "wad.hpp"
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <span>
@@ -41,21 +43,44 @@ WAD::WAD2MipHeader::WAD2MipHeader(std::span<const uint8_t> data, size_t offset)
         BinData::read_num<int32_t>(data, this->own_offset + scale_8_pos_offset);
 }
 
+int32_t WAD::WAD2MipHeader::mipmap_lvl_pos(unsigned lvl) const
+{
+    switch (lvl) {
+
+    case 0:
+        return this->scale_1_pos;
+
+    case 1:
+        return this->scale_2_pos;
+
+    case 2:
+        return this->scale_4_pos;
+
+    case 3:
+        return this->scale_8_pos;
+
+    default:
+        assert(false);
+    };
+}
+
 std::vector<uint8_t>
 WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
                                unsigned mipmap_lvl) const
 {
-    // only the first mipmap is supported rn
-    assert(mipmap_lvl == 0);
-
     std::vector<uint8_t> pixels;
     pixels.reserve(this->width * this->height);
 
-    size_t base_offset = this->scale_1_pos + 4 + this->own_offset;
+    size_t base_offset = this->mipmap_lvl_pos(mipmap_lvl) + this->own_offset;
+    // base_offset += (this->n_mipmap_lvls - mipmap_lvl - 1) * 4;
 
-    for (int32_t y = 0; y < this->height; ++y) {
-        for (int32_t x = 0; x < this->width; ++x) {
-            size_t offset = (this->width * y + x) + base_offset;
+    int32_t mipmap_width = this->width >> mipmap_lvl;
+    int32_t mipmap_height = this->height >> mipmap_lvl;
+
+    for (int32_t y = 0; y < mipmap_width; ++y) {
+        for (int32_t x = 0; x < mipmap_height; ++x) {
+            size_t offset =
+                Index::conv_2d_to_1d(Vec2i(x, y), mipmap_width) + base_offset;
             uint8_t idx = BinData::read_num<uint8_t>(data, offset);
             pixels.push_back(idx);
         }
@@ -66,8 +91,12 @@ WAD::WAD2MipHeader::get_pixels(std::span<const uint8_t> data,
 
 Texture WAD::WAD2MipHeader::to_texture(std::span<const uint8_t> data) const
 {
-    return Texture(this->get_pixels(data, 0), this->width, this->height,
-                   this->name);
+    std::array<MipMapLevel, n_mipmap_lvls> mipmaps;
+    for (size_t i = 0; i < this->n_mipmap_lvls; ++i) {
+        mipmaps[i] = MipMapLevel(this->get_pixels(data, i));
+    }
+
+    return Texture(mipmaps, this->width, this->height, this->name);
 }
 
 WAD::WAD2Entry::WAD2Entry(std::span<const uint8_t> data, size_t offset)
