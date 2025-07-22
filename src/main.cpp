@@ -1,15 +1,12 @@
 #include "bsp.hpp"
 #include "camera.hpp"
 #include "color.hpp"
-#include "map_loading/obj_loader.hpp"
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
-#include "shape.hpp"
 #include "texture.hpp"
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
