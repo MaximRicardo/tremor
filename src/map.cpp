@@ -27,10 +27,10 @@ void MapEntity::render(std::span<Color> frame, std::span<float> depth_buffer,
 }
 
 void Map::render(std::span<Color> frame, std::span<float> depth_buffer,
-                 const Camera &cam, std::span<const Texture> texs) const
+                 const Camera &cam) const
 {
     for (auto &entity : this->entities) {
-        entity.render(frame, depth_buffer, cam, texs);
+        entity.render(frame, depth_buffer, cam, this->textures);
     }
 }
 

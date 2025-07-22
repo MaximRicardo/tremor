@@ -28,9 +28,10 @@ class Map {
 public:
     // worldspawn is always first
     std::vector<MapEntity> entities;
+    std::vector<Texture> textures;
 
     void render(std::span<Color> frame, std::span<float> depth_buffer,
-                const Camera &cam, std::span<const Texture> texs) const;
+                const Camera &cam) const;
 
     size_t n_triangles() const;
 };
