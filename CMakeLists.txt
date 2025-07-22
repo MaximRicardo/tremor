@@ -9,6 +9,7 @@ project(tremor)
 add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -fno-rtti)
 
 # select the rendering API
+# the selected api will be used as a pass-through to send pixels to the screen
 add_compile_options(-Dm_RAYLIB=1)
 
 # i am speed
@@ -30,4 +31,3 @@ file(GLOB_RECURSE Sources CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
 add_executable(tremor "${Sources}")
 
 target_link_libraries(tremor -lraylib -lGL -lm -lpthread -ldl -lrt -lX11)
-target_include_directories(tremor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
