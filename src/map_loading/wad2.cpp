@@ -3,7 +3,6 @@
 #include "wad.hpp"
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -94,14 +93,6 @@ WAD::WAD2Entry::read_mip_tex(std::span<const uint8_t> data) const
 
     WAD2MipHeader mip(data, this->offset);
 
-    std::cout << "name = " << mip.name << "\n";
-    std::cout << "width = " << mip.width << "\n";
-    std::cout << "height = " << mip.height << "\n";
-    std::cout << "scale_1_pos = " << mip.scale_1_pos << "\n";
-    std::cout << "scale_2_pos = " << mip.scale_2_pos << "\n";
-    std::cout << "scale_4_pos = " << mip.scale_4_pos << "\n";
-    std::cout << "scale_8_pos = " << mip.scale_8_pos << "\n";
-
     return mip;
 }
 
@@ -139,9 +130,6 @@ std::vector<Texture> WAD::load_wad2(std::span<const uint8_t> data)
 {
     WAD2Header header(data, 0);
     assert(header.format == wad2_format_name);
-
-    std::cout << "n entries = " << header.n_entries << "\n";
-    std::cout << "dir offset = " << header.dir_offset << "\n";
 
     WAD2Dir dir(header, data);
     return dir.get_textures(data);

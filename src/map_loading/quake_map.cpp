@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -23,6 +24,9 @@
 #include <vector>
 
 namespace {
+
+// idx of the worldspawn entity in the entity list
+constexpr size_t worldspawn_idx = 0;
 
 // each plane of each brush is represented by a triangle (and some other info)
 class BrushPlane {
@@ -247,9 +251,9 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
         assert(plane);
 
         size_t tex_idx = plane->get_tex_idx(textures);
-        assert(tex_idx != SIZE_MAX);
-
-        std::cout << "tex idx = " << tex_idx << "\n";
+        if (tex_idx == SIZE_MAX)
+            throw std::runtime_error("error: texture " + plane->texture +
+                                     "doesn't exist.");
 
         auto poly_tris = poly.get_triangles();
         for (auto &tri : poly_tris) {
@@ -330,7 +334,24 @@ Vec3 Entity::get_pos() const
     return pos;
 }
 
-Map read_file(std::ifstream &file, std::filesystem::path path)
+void put_worldspawn_at_idx(std::vector<Entity> &entities, size_t idx)
+{
+    assert(worldspawn_idx < entities.size());
+
+    for (auto &entity : entities) {
+        if (entity.name != "worldspawn")
+            continue;
+
+        // btw, if worldspawn happens to already be at idx, swapping
+        // entity with itself will just leave the value unchanged.
+        std::swap(entity, entities[idx]);
+        return;
+    }
+
+    throw std::runtime_error("error: missing the worldspawn entity.");
+}
+
+std::vector<Entity> get_entities(std::ifstream &file)
 {
     std::vector<Entity> entities;
 
@@ -346,15 +367,32 @@ Map read_file(std::ifstream &file, std::filesystem::path path)
             entities.emplace_back(file);
     }
 
+    put_worldspawn_at_idx(entities, worldspawn_idx);
+
+    return entities;
+}
+
+std::vector<Texture> load_wad_file(const Entity &worldspawn,
+                                   std::filesystem::path map_dir)
+{
+    std::filesystem::path wad_path =
+        worldspawn.info[worldspawn.get_info_idx("wad")].value;
+
+    return WAD::load_file(map_dir / wad_path);
+}
+
+Map read_file(std::ifstream &file, const std::filesystem::path &path)
+{
+    std::filesystem::path dir = path;
+    dir.remove_filename();
+
+    auto entities = get_entities(file);
     if (entities.empty())
         throw std::runtime_error("error: .map file '" + path.string() +
                                  "' is empty.");
 
     Map map;
-
-    std::filesystem::path wad_path =
-        entities[0].info[entities[0].get_info_idx("wad")].value;
-    map.textures = WAD::load_file(path.remove_filename() / wad_path);
+    map.textures = load_wad_file(entities[worldspawn_idx], dir);
 
     for (const auto &entity : entities) {
         if (entity.brushes.empty())
