@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <limits>
 #include <memory>
@@ -46,8 +47,8 @@ std::array<Vec2, 3> camera_vs_to_norm_scr(const std::array<Vec3, 3> &vs,
 Vec2i norm_scr_v_to_scr(const Vec2 &v)
 {
     Vec2i w;
-    w.x = (v.x + 1.f) / 2.f * Res::width;
-    w.y = (-v.y + 1.f) / 2.f * Res::height;
+    w.x = std::round((v.x + 1.f) / 2.f * Res::width);
+    w.y = std::round((-v.y + 1.f) / 2.f * Res::height);
 
     return w;
 }
@@ -69,22 +70,21 @@ struct TriangleEdgeList {
     // a list of lines from one edge of the triangle to another.
     // each element in starts and ends represents one scanline of the triangle,
     // starting from the top and ending at the bottom.
-    std::unique_ptr<int[]> starts;
-    std::unique_ptr<int[]> ends;
+    std::unique_ptr<int32_t[]> starts;
+    std::unique_ptr<int32_t[]> ends;
     size_t n_edges;
     // how much to add to the index of a scanline to get its y coordinate in
     // screen-space.
-    int y_offset;
+    int32_t y_offset;
 };
 
+// bresenham line algorithm from https://gist.github.com/bert/1085538
 void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
                                 struct TriangleEdgeList &edges)
 {
-    // bresenham line algorithm from https://gist.github.com/bert/1085538
-
-    int dx = abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
-    int dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
-    int err = dx + dy, e2; /* error value e_xy */
+    int32_t dx = abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
+    int32_t dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
+    int32_t err = dx + dy, e2; /* error value e_xy */
 
     for (;;) { /* loop */
 
@@ -115,25 +115,25 @@ TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
 {
     TriangleEdgeList edges;
 
-    int y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
-    int y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
+    auto y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
+    auto y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
 
     // skip any edges outside the screen
-    if (y_max < 0 || y_min >= static_cast<int>(Res::height)) {
+    if (y_max < 0 || y_min >= static_cast<int32_t>(Res::height)) {
         edges.n_edges = 0;
         return edges;
     }
     y_min = std::max(y_min, 0);
-    y_max = std::min(y_max, static_cast<int>(Res::height - 1));
+    y_max = std::min(y_max, static_cast<int32_t>(Res::height - 1));
 
     edges.y_offset = y_min;
     edges.n_edges = y_max - y_min + 1;
-    edges.starts = std::make_unique<int[]>(edges.n_edges);
-    edges.ends = std::make_unique<int[]>(edges.n_edges);
+    edges.starts = std::make_unique<int32_t[]>(edges.n_edges);
+    edges.ends = std::make_unique<int32_t[]>(edges.n_edges);
 
     for (size_t i = 0; i < edges.n_edges; ++i) {
-        edges.starts[i] = std::numeric_limits<int>::max();
-        edges.ends[i] = std::numeric_limits<int>::lowest();
+        edges.starts[i] = std::numeric_limits<int32_t>::max();
+        edges.ends[i] = std::numeric_limits<int32_t>::lowest();
     }
 
     set_tri_edge_list_via_line(vs[0], vs[1], edges);
@@ -336,8 +336,8 @@ void SubTriangle::render(std::span<Color> frame, std::span<float> depth_buffer,
     TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
 
     for (size_t i = 0; i < edges.n_edges; i++) {
-        int y = i + edges.y_offset;
-        render_horizontal_line(y, edges.starts[i], edges.ends[i], frame,
+        int32_t y = i + edges.y_offset;
+        render_horizontal_line(y, edges.starts[i], edges.ends[i] - 1, frame,
                                depth_buffer, *this, texs);
     }
 }
