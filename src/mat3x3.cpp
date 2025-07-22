@@ -4,9 +4,7 @@
 #include <cassert>
 #include <cmath>
 
-Matrix3x3::Matrix3x3(const std::array<std::array<float, 3>, 3> &elems)
-    : elems(elems)
-{}
+Matrix3x3::Matrix3x3(const decltype(elems) &elems) : elems(elems) {}
 
 Vec3 Matrix3x3::operator*(const Vec3 &v) const
 {
