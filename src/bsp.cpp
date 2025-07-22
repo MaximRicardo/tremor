@@ -1,6 +1,8 @@
 #include "bsp.hpp"
 #include "camera.hpp"
 #include "constants.hpp"
+#include "map.hpp"
+#include "mat4x4.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -175,15 +177,17 @@ void BSP::fill_with_triangles(std::span<const Triangle> tris)
     }
 }
 
-void BSP::render(const Matrix4x4 &transform, std::span<Color> frame,
+void BSP::render(const MapEntity &parent, std::span<Color> frame,
                  std::span<float> depth_buffer, const Camera &cam,
                  std::span<const Texture> texs) const
 {
+    Vec3 rel_cam = parent.get_inv_transform() * Vec4(cam.pos, 1.f);
+
     if (this->is_leaf()) {
         for (const auto &tri : this->leaf_info().edge_tris) {
-            if (tri.get_plane(transform).is_point_behind(cam.pos))
+            if (tri.get_plane().is_point_behind(rel_cam))
                 continue;
-            tri.render(transform, frame, depth_buffer, cam, texs);
+            tri.render(parent.get_transform(), frame, depth_buffer, cam, texs);
         }
         return;
     }
@@ -194,7 +198,7 @@ void BSP::render(const Matrix4x4 &transform, std::span<Color> frame,
     }
     */
 
-    bool cam_in_front = !this->innode_info().plane.is_point_behind(cam.pos);
+    bool cam_in_front = !this->innode_info().plane.is_point_behind(rel_cam);
 
     // since we wanna render everything back to front, we gotta flip around
     // behind and in front depending on whether the camera's definition of in
@@ -203,10 +207,10 @@ void BSP::render(const Matrix4x4 &transform, std::span<Color> frame,
     auto &last = cam_in_front ? this->in_front : this->behind;
 
     if (first)
-        first->render(transform, frame, depth_buffer, cam, texs);
+        first->render(parent, frame, depth_buffer, cam, texs);
 
     if (last)
-        last->render(transform, frame, depth_buffer, cam, texs);
+        last->render(parent, frame, depth_buffer, cam, texs);
 }
 
 size_t BSP::n_triangles() const
@@ -283,31 +287,38 @@ void BSP::create_leaf_nodes()
              Consts::map_bounding_box_max_z)));
 }
 
-const BSP &BSP::get_point_node(const Vec3 &point) const
+const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
 {
+    Vec3 rel_p = parent.get_inv_transform() * Vec4(point, 1.f);
+    std::cout << "rel_cam = " << rel_p << "\n";
+
     if (this->is_leaf()) {
         assert(this->has_leaf_info());
         return *this;
     } else {
-        auto &node = this->innode_info().plane.is_point_behind(point)
+        auto &node = this->innode_info().plane.is_point_behind(rel_p)
                          ? this->behind
                          : this->in_front;
-        return node->get_point_node(point);
+        return node->get_point_node(point, parent);
     }
 }
 
-BSP &BSP::get_point_node(const Vec3 &point)
+BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent)
 {
-    return const_cast<BSP &>(std::as_const(*this).get_point_node(point));
+    return const_cast<BSP &>(
+        std::as_const(*this).get_point_node(point, parent));
 }
 
-bool BSP::point_in_solid(const Vec3 &point) const
+bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
 {
-    auto &p_node = this->get_point_node(point);
+    auto &p_node = this->get_point_node(point, parent);
 
     std::cout << "point = (" << point << ")\n";
     std::cout << "min = (" << p_node.b_box.min << ")\n";
     std::cout << "max = (" << p_node.b_box.max << ")\n";
-    std::cout << "point inside = " << p_node.b_box.contains(point) << "\n";
+    std::cout << "point inside = "
+              << p_node.b_box.contains(parent.get_inv_transform() *
+                                       Vec4(point, 1.f))
+              << "\n";
     return !p_node.leaf_info().empty;
 }

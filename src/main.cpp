@@ -9,6 +9,7 @@
 #include "texture.hpp"
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -28,10 +29,11 @@ int main()
                Angle(90.f, Angle::Type::DEGREES));
 
     auto map = QuakeMapLoader::load_file("../maps/test.map");
-    BSP &worldspawn = map.entities[0].bsp;
+    MapEntity &worldspawn = map.entities[0];
 
     std::cout << "map has " << map.n_triangles() << " tris\n";
-    std::cout << "worldspawn max depth is " << worldspawn.max_depth() << "\n";
+    std::cout << "worldspawn max depth is " << worldspawn.bsp.max_depth()
+              << "\n";
 
     std::vector<Texture> texs;
     texs.emplace_back("../textures/img.png");
@@ -48,7 +50,7 @@ int main()
         prev_time = Time::get_ticks_ms();
 
         std::cout << "delta_time = " << delta_time << '\n';
-        bool cam_in_solid = worldspawn.point_in_solid(cam.pos);
+        bool cam_in_solid = worldspawn.bsp.point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 
         for (std::size_t i = 0; i < Res::size; i++) {

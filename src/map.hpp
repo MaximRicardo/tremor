@@ -17,6 +17,7 @@ public:
     MapEntity(std::span<const Triangle> tris, Vec3 pos);
 
     Matrix4x4 get_transform() const;
+    Matrix4x4 get_inv_transform() const;
 
     void render(std::span<Color> frame, std::span<float> depth_buffer,
                 const Camera &cam, std::span<const Texture> texs) const;

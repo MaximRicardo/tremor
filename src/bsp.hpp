@@ -9,6 +9,8 @@
 #include <variant>
 #include <vector>
 
+class MapEntity;
+
 // if shit breaks in weird ways u might wanna try disabling this to see if
 // there's something wrong with the way the tree detects solid nodes.
 // #define m_BSP_PLACE_TRIS_IN_SOLID_NODES
@@ -72,14 +74,16 @@ public:
 
     explicit BSP(std::span<const Triangle> tris);
 
-    void render(const Matrix4x4 &transform, std::span<Color> frame,
+    void render(const MapEntity &parent_entity, std::span<Color> frame,
                 std::span<float> depth_buffer, const Camera &cam,
                 std::span<const Texture> texs) const;
     size_t n_triangles() const;
     size_t max_depth() const;
     bool is_leaf() const;
     // get the leaf node a point is in
-    const BSP &get_point_node(const Vec3 &point) const;
-    BSP &get_point_node(const Vec3 &point);
-    bool point_in_solid(const Vec3 &point) const;
+    const BSP &get_point_node(const Vec3 &point,
+                              const MapEntity &parent_entity) const;
+    BSP &get_point_node(const Vec3 &point, const MapEntity &parent_entity);
+    bool point_in_solid(const Vec3 &point,
+                        const MapEntity &parent_entity) const;
 };

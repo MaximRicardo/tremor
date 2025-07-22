@@ -4,6 +4,8 @@
 #include "vector/vec4.hpp"
 #include <array>
 
+// i fucking hate matrices now
+
 class Matrix4x4 {
 
     Matrix4x4() = default;
@@ -21,4 +23,13 @@ public:
     Matrix4x4 &operator*=(float x);
     Matrix4x4 operator*(const Matrix4x4 &other) const;
     Matrix4x4 &operator*=(const Matrix4x4 &other);
+
+    /*
+    float minor(size_t column, size_t row) const;
+    float cofactor(size_t column, size_t row) const;
+    Matrix4x4 transpose() const;
+    float determinant() const;
+    Matrix4x4 adjugate() const;
+    Matrix4x4 inverse() const;
+    */
 };

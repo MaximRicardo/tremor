@@ -12,10 +12,18 @@ Matrix4x4 MapEntity::get_transform() const
     return mat;
 }
 
+Matrix4x4 MapEntity::get_inv_transform() const
+{
+    Matrix4x4 mat = Matrix4x4::identity();
+    mat *= Matrix4x4::translate(-this->pos);
+
+    return mat;
+}
+
 void MapEntity::render(std::span<Color> frame, std::span<float> depth_buffer,
                        const Camera &cam, std::span<const Texture> texs) const
 {
-    this->bsp.render(this->get_transform(), frame, depth_buffer, cam, texs);
+    this->bsp.render(*this, frame, depth_buffer, cam, texs);
 }
 
 void Map::render(std::span<Color> frame, std::span<float> depth_buffer,
