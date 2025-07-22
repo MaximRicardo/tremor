@@ -1,9 +1,13 @@
 #include "vec3.hpp"
+#include "vec4.hpp"
 #include <cassert>
 #include <cmath>
 
 Vec3::Vec3() {}
+
 Vec3::Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+Vec3::Vec3(Vec4 v) : x(v.x), y(v.y), z(v.z) {}
 
 Vec3 Vec3::zero()
 {
@@ -15,7 +19,7 @@ Vec3 Vec3::operator+(const Vec3 &v) const
     return {this->x + v.x, this->y + v.y, this->z + v.z};
 }
 
-Vec3 Vec3::operator+=(const Vec3 &v)
+Vec3 &Vec3::operator+=(const Vec3 &v)
 {
     *this = *this + v;
     return *this;
@@ -26,7 +30,7 @@ Vec3 Vec3::operator-(const Vec3 &v) const
     return {this->x - v.x, this->y - v.y, this->z - v.z};
 }
 
-Vec3 Vec3::operator-=(const Vec3 &v)
+Vec3 &Vec3::operator-=(const Vec3 &v)
 {
     *this = *this - v;
     return *this;
@@ -37,7 +41,7 @@ Vec3 Vec3::operator*(float x) const
     return {this->x * x, this->y * x, this->z * x};
 }
 
-Vec3 Vec3::operator*=(float x)
+Vec3 &Vec3::operator*=(float x)
 {
     *this = *this * x;
     return *this;
@@ -48,7 +52,7 @@ Vec3 Vec3::operator/(float x) const
     return {this->x / x, this->y / x, this->z / x};
 }
 
-Vec3 Vec3::operator/=(float x)
+Vec3 &Vec3::operator/=(float x)
 {
     *this = *this / x;
     return *this;

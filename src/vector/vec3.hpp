@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../angle.hpp"
+#include "vec4.hpp"
 #include <ostream>
 
 class Vec3 {
@@ -10,17 +11,19 @@ public:
 
     Vec3();
     Vec3(float x, float y, float z);
+    // copies the x, y, and z components
+    Vec3(Vec4 v);
 
     static Vec3 zero();
 
     Vec3 operator+(const Vec3 &v) const;
-    Vec3 operator+=(const Vec3 &v);
+    Vec3 &operator+=(const Vec3 &v);
     Vec3 operator-(const Vec3 &v) const;
-    Vec3 operator-=(const Vec3 &v);
+    Vec3 &operator-=(const Vec3 &v);
     Vec3 operator*(float x) const;
-    Vec3 operator*=(float x);
+    Vec3 &operator*=(float x);
     Vec3 operator/(float x) const;
-    Vec3 operator/=(float x);
+    Vec3 &operator/=(float x);
     Vec3 operator-() const;
 
     float dot(const Vec3 &v) const;
