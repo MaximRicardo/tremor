@@ -49,6 +49,8 @@ int main()
 
         prev_time = Time::get_ticks_ms();
 
+        map.entities[1].pos.x += delta_time;
+
         std::cout << "delta_time = " << delta_time << '\n';
         bool cam_in_solid = worldspawn.bsp.point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';

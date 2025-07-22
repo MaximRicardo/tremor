@@ -290,7 +290,6 @@ void BSP::create_leaf_nodes()
 const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
 {
     Vec3 rel_p = parent.get_inv_transform() * Vec4(point, 1.f);
-    std::cout << "rel_cam = " << rel_p << "\n";
 
     if (this->is_leaf()) {
         assert(this->has_leaf_info());
