@@ -42,14 +42,27 @@ int key_enum_to_raylib(Input::Key key)
 
     case Input::Key::RIGHT:
         return KEY_RIGHT;
+
+    case Input::Key::R:
+        return KEY_R;
+
+    case Input::Key::F:
+        return KEY_F;
     }
 }
 
 } // namespace
 
-bool Input::is_key_down(Key key, [[maybe_unused]] Screen &screen)
+bool Input::is_key_down(Key key, Screen &screen)
 {
+    (void)screen;
     return IsKeyDown(key_enum_to_raylib(key));
+}
+
+bool Input::key_pressed_once(Key key, Screen &screen)
+{
+    (void)screen;
+    return IsKeyPressed(key_enum_to_raylib(key));
 }
 
 #endif

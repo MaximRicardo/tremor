@@ -12,7 +12,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <span>
@@ -240,7 +239,8 @@ size_t select_mipmap(const SubTriangle &tri, const Texture &tex)
 {
     // temporary solution
 
-    float ratio = Res::size / (tex.n_pixels(0) * tri.tex_space_area() * 2.f);
+    float ratio =
+        Res::n_pixels() / (tex.n_pixels(0) * tri.tex_space_area() * 2.f);
     float avrg_z = (tri.vs[0].z + tri.vs[1].z + tri.vs[2].z) / 3.f;
 
     size_t lvl;

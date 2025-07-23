@@ -1,25 +1,52 @@
 #include "bsp.hpp"
 #include "camera.hpp"
 #include "color.hpp"
+#include "input/input.hpp"
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
 
-int main()
+namespace {
+
+void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
+                   uint32_t upscaled_height, Screen &screen,
+                   FixedArray<Color> &frame, FixedArray<float> &depth_buffer)
+{
+    Res::width = width;
+    Res::height = height;
+    Res::upscaled_width = upscaled_width;
+    Res::upscaled_height = upscaled_height;
+
+    frame = FixedArray<Color>(Res::n_pixels());
+    depth_buffer = FixedArray<float>(Res::n_pixels());
+
+    screen.update_resolution();
+}
+
+} // namespace
+
+int main(int argc, char *argv[])
 {
     Time::init();
 
-    Screen screen(Res::width, Res::height, Res::upscaled_width,
-                  Res::upscaled_height, "Quaken't");
+    if (argc >= 2 && std::strcmp(argv[1], "--fast") == 0) {
+        // i'd rather not debug the program at a whopping 5 fps
+        Res::width /= 2;
+        Res::height /= 2;
+    }
 
-    FixedArray<Color> frame(Res::size);
-    FixedArray<float> depth_buffer(Res::size);
+    Screen screen("Tremor");
+
+    FixedArray<Color> frame(Res::n_pixels());
+    FixedArray<float> depth_buffer(Res::n_pixels());
 
     Map map;
     std::filesystem::path map_path = "../maps/map.map";
@@ -59,12 +86,18 @@ int main()
         bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 
-        for (std::size_t i = 0; i < Res::size; i++) {
+        for (std::size_t i = 0; i < Res::n_pixels(); i++) {
             frame[i] = Color(0, 0, 0);
             depth_buffer[i] = 10000.f;
         }
 
         cam.handle_input(delta_time, screen);
+        if (Input::key_pressed_once(Input::Key::R, screen))
+            resize_window(320, 200, Res::upscaled_width, Res::upscaled_height,
+                          screen, frame, depth_buffer);
+        else if (Input::key_pressed_once(Input::Key::F, screen))
+            resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
+                          screen, frame, depth_buffer);
 
         /*
         for (auto &tri : tris) {

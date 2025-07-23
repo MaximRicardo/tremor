@@ -5,13 +5,14 @@
 
 namespace Res {
 
-constexpr uint32_t width = 320;
-constexpr uint32_t height = 200;
-constexpr size_t size = width * height;
-constexpr float aspect_ratio = static_cast<float>(width) / height;
+inline uint32_t width = 320;
+inline uint32_t height = 200;
 
-constexpr uint32_t upscaled_width = 1280;
-constexpr uint32_t upscaled_height = 800;
-constexpr size_t upscaled_size = upscaled_width * upscaled_height;
+size_t n_pixels();
+float aspect_ratio();
+
+inline uint32_t upscaled_width = 1280;
+inline uint32_t upscaled_height = 800;
+size_t upscaled_n_pixels();
 
 } // namespace Res
