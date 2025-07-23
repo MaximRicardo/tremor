@@ -25,11 +25,10 @@ int main()
                Angle(90.f, Angle::Type::DEGREES));
 
     Map map;
-    std::filesystem::path map_path = "../maps/map.map";
-    QuakeMapLoader::Format fmt = QuakeMapLoader::Format::QUAKE_1;
+    std::filesystem::path map_path = "../maps/quake_test.map";
 
     try {
-        map = QuakeMapLoader::load_file(map_path, fmt);
+        map = QuakeMapLoader::load_file(map_path);
     } catch (std::runtime_error &e) {
         std::cerr << "failed to load in .map file '" << map_path.string()
                   << "': " << e.what() << "\n";

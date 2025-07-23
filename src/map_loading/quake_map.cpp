@@ -88,15 +88,17 @@ public:
 
 class Entity {
 
+    void set_name();
+
 public:
     std::string name;
-    // classname is not included in this list
     std::vector<EntityInfo> info;
     std::vector<Brush> brushes;
 
     // file should be pointing to the line after the left curly marking the
     // start of the entity
-    Entity(std::ifstream &file, QuakeMapLoader::Format format);
+    // format would be changed if the class has a "mapversion" entry
+    Entity(std::ifstream &file, QuakeMapLoader::Format &format);
 
     size_t get_info_idx(std::string_view key) const;
     MapEntity to_map_entity(std::span<const Texture> textures) const;
@@ -235,6 +237,9 @@ BrushPlane::BrushPlane(std::string_view line, QuakeMapLoader::Format format)
     case QuakeMapLoader::Format::VALVE:
         this->construct_valve(line);
         break;
+
+    case QuakeMapLoader::Format::DETECT:
+        assert(false);
     }
 }
 
@@ -365,8 +370,44 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
     return tris;
 }
 
-Entity::Entity(std::ifstream &file, QuakeMapLoader::Format format)
+QuakeMapLoader::Format map_version_to_format(std::string_view version)
 {
+    if (version == "220")
+        return QuakeMapLoader::Format::VALVE;
+
+    throw std::runtime_error("error: unsupported .map version '" +
+                             std::string(version) + "'.");
+}
+
+QuakeMapLoader::Format change_format(QuakeMapLoader::Format format,
+                                     std::string_view new_fmt_name,
+                                     bool should_update_fmt)
+{
+    QuakeMapLoader::Format ret = format;
+    QuakeMapLoader::Format new_fmt = map_version_to_format(new_fmt_name);
+
+    if (should_update_fmt) {
+        ret = new_fmt;
+    } else {
+        if (new_fmt != format) {
+            std::cerr << "warning: .map version mismatch. version '" +
+                             QuakeMapLoader::format_name(new_fmt) +
+                             "' specified in a file with version '" +
+                             QuakeMapLoader::format_name(format) + "'\n";
+        }
+    }
+
+    return ret;
+}
+
+Entity::Entity(std::ifstream &file, QuakeMapLoader::Format &format)
+{
+    bool detect_fmt = format == QuakeMapLoader::Format::DETECT;
+    if (detect_fmt) {
+        // assume standard quake until proven otherwise
+        format = QuakeMapLoader::Format::QUAKE_1;
+    }
+
     std::string line;
     while (std::getline(file, line)) {
         remove_leading_ws(line);
@@ -377,18 +418,27 @@ Entity::Entity(std::ifstream &file, QuakeMapLoader::Format format)
             break;
         else if (line.starts_with("{"))
             this->brushes.emplace_back(file, format);
-        else
+        else {
             this->info.emplace_back(line);
+            if (this->info.back().key == "mapversion") {
+                format =
+                    change_format(format, this->info.back().value, detect_fmt);
+            }
+        }
     }
 
+    this->set_name();
+}
+
+void Entity::set_name()
+{
     size_t name_idx = this->get_info_idx("classname");
     if (name_idx == SIZE_MAX) {
         // have fun finding out where said entity is lol
-        throw std::runtime_error("error: entity missing a class name");
+        throw std::runtime_error("error: entity missing a name");
     }
 
     this->name = this->info[name_idx].value;
-    this->info.erase(this->info.begin() + name_idx);
 }
 
 size_t Entity::get_info_idx(std::string_view key) const
@@ -508,6 +558,21 @@ Map read_file(std::ifstream &file, const std::filesystem::path &path,
 }
 
 } // namespace
+
+std::string QuakeMapLoader::format_name(Format format)
+{
+    switch (format) {
+
+    case QuakeMapLoader::Format::DETECT:
+        return "detect_version";
+
+    case QuakeMapLoader::Format::QUAKE_1:
+        return "quake 1";
+
+    case QuakeMapLoader::Format::VALVE:
+        return "valve 220";
+    }
+}
 
 Map QuakeMapLoader::load_file(const std::filesystem::path &path, Format format)
 {
