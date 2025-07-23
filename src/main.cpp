@@ -21,13 +21,6 @@ int main()
     FixedArray<Color> frame(Res::size);
     FixedArray<float> depth_buffer(Res::size);
 
-    Camera cam(Vec3(721.f, 110.f, 1046.f), Angle(0.f), Angle(0.f),
-               Angle(90.f, Angle::Type::DEGREES), 100.f);
-    /*
-    Camera cam(Vec3(0.f, 0.f, -32.f), Angle(0.f), Angle(0.f),
-               Angle(90.f, Angle::Type::DEGREES), 100.f);
-               */
-
     Map map;
     std::filesystem::path map_path = "../maps/map.map";
 
@@ -40,12 +33,16 @@ int main()
     }
 
     std::cout << "map loaded\n";
+    std::cout << "n entities = " << map.entities.size() << "\n";
 
     MapEntity &worldspawn = map.entities[0];
 
     std::cout << "map has " << map.n_triangles() << " tris\n";
-    std::cout << "worldspawn max depth is " << worldspawn.bsp.max_depth()
+    std::cout << "worldspawn max depth is " << worldspawn.bsp->max_depth()
               << "\n";
+
+    Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
+               Angle(90.f, Angle::Type::DEGREES), 100.f);
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
@@ -59,7 +56,7 @@ int main()
         prev_time = Time::get_ticks_ms();
 
         std::cout << "delta_time = " << delta_time << '\n';
-        bool cam_in_solid = worldspawn.bsp.point_in_solid(cam.pos, worldspawn);
+        bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 
         for (std::size_t i = 0; i < Res::size; i++) {

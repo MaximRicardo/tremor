@@ -1,4 +1,5 @@
 // stole this map file from the original quake
+// doesn't seem to load in correctly rn
 
 {
 "message" "Place of Two Deaths"
@@ -4058,25 +4059,6 @@
 }
 }
 {
-"classname" "info_intermission"
-"origin" "432 896 120"
-"mangle" "20 210 0"
-}
-{
-"angle" "180"
-"mangle" "15 180 0"
-"origin" "296 1152 200"
-"classname" "info_intermission"
-}
-{
-"map" "dm2"
-"classname" "trigger_changelevel"
-{
-( 1152 448 64 ) ( 1088 448 64 ) ( 1088 384 64 ) TRIGGER 0 0 0 1.000000 1.000000
-( 1088 384 128 ) ( 1088 448 128 ) ( 1152 448 128 ) TRIGGER 0 0 0 1.000000 1.000000
-( 1088 384 416 ) ( 1152 384 416 ) ( 1152 384 64 ) TRIGGER 0 0 0 1.000000 1.000000
-( 1152 384 416 ) ( 1152 448 416 ) ( 1152 448 64 ) TRIGGER 0 0 0 1.000000 1.000000
-( 1152 448 416 ) ( 1088 448 416 ) ( 1088 448 64 ) TRIGGER 0 0 0 1.000000 1.000000
-( 1088 448 416 ) ( 1088 384 416 ) ( 1088 384 64 ) TRIGGER 0 0 0 1.000000 1.000000
-}
+"classname" "info_player_start"
+"origin" "324 1156 24"
 }

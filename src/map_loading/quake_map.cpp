@@ -84,6 +84,7 @@ public:
     std::string value;
 
     explicit EntityInfo(std::string_view line);
+    Vec3 get_vec3_value() const;
 };
 
 class Entity {
@@ -130,14 +131,6 @@ void skip_char(std::istringstream &stream, char expected_char)
     }
 }
 
-EntityInfo::EntityInfo(std::string_view line)
-{
-    std::istringstream stream((std::string(line)));
-
-    stream >> std::quoted(this->key);
-    stream >> std::quoted(this->value);
-}
-
 void BrushPlane::get_vs(std::istringstream &stream)
 {
     for (auto &v : this->vs) {
@@ -159,27 +152,17 @@ void BrushPlane::get_u_v_dirs()
 
     Vec3 back(0.f, 0.f, 1.f);
 
-    bool u_used_back = false;
-    bool v_used_back = false;
-
-    if (plane.normal.dot(up) < 1.f - Consts::epsilon) {
+    if (std::abs(plane.normal.dot(up)) < 1.f - Consts::epsilon) {
         this->u = up.cross(plane.normal);
     } else {
         this->u = back.cross(plane.normal);
-        u_used_back = true;
     }
 
-    if (plane.normal.dot(left) < 1.f - Consts::epsilon) {
+    if (std::abs(plane.normal.dot(left)) < 1.f - Consts::epsilon) {
         this->v = left.cross(plane.normal);
     } else {
         this->v = back.cross(plane.normal);
-        v_used_back = true;
     }
-
-    assert(!(u_used_back && v_used_back));
-    // in case NDEBUG is defined
-    (void)u_used_back;
-    (void)v_used_back;
 }
 
 void BrushPlane::construct_quake(std::string_view line)
@@ -404,6 +387,25 @@ QuakeMapLoader::Format change_format(QuakeMapLoader::Format format,
     return ret;
 }
 
+EntityInfo::EntityInfo(std::string_view line)
+{
+    std::istringstream stream((std::string(line)));
+
+    stream >> std::quoted(this->key);
+    stream >> std::quoted(this->value);
+}
+
+Vec3 EntityInfo::get_vec3_value() const
+{
+    std::stringstream s(this->value);
+
+    Vec3 pos;
+    s >> pos.x;
+    s >> pos.z;
+    s >> pos.y;
+    return pos;
+}
+
 Entity::Entity(std::ifstream &file, QuakeMapLoader::Format &format)
 {
     bool detect_fmt = format == QuakeMapLoader::Format::DETECT;
@@ -466,7 +468,7 @@ MapEntity Entity::to_map_entity(std::span<const Texture> textures) const
         tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
     }
 
-    return MapEntity(tris, this->get_pos());
+    return MapEntity(tris, this->get_pos(), this->name);
 }
 
 // if the entity doesn't have an origin, the pos defaults to 0
@@ -476,13 +478,7 @@ Vec3 Entity::get_pos() const
     if (idx == SIZE_MAX)
         return Vec3::zero();
 
-    std::stringstream s(this->info[idx].value);
-
-    Vec3 pos;
-    s >> pos.x;
-    s >> pos.y;
-    s >> pos.z;
-    return pos;
+    return this->info[idx].get_vec3_value();
 }
 
 void put_worldspawn_at_idx(std::vector<Entity> &entities, size_t idx)
@@ -553,8 +549,6 @@ Map read_file(std::ifstream &file, const std::filesystem::path &path,
     map.textures = load_wad_file(entities[worldspawn_idx], dir);
 
     for (const auto &entity : entities) {
-        if (entity.brushes.empty())
-            continue;
         map.entities.push_back(entity.to_map_entity(map.textures));
     }
 

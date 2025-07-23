@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aabb.hpp"
-#include "mat4x4.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <cstdint>
