@@ -7,8 +7,9 @@
 #include "time.hpp"
 #include "utils/fixed_array.hpp"
 #include <cstddef>
+#include <filesystem>
 #include <iostream>
-#include <vector>
+#include <stdexcept>
 
 int main()
 {
@@ -23,14 +24,25 @@ int main()
     Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES));
 
-    auto map = QuakeMapLoader::load_file("../maps/test.map");
+    Map map;
+    std::filesystem::path map_path = "../maps/map.map";
+    QuakeMapLoader::Format fmt = QuakeMapLoader::Format::QUAKE_1;
+
+    try {
+        map = QuakeMapLoader::load_file(map_path, fmt);
+    } catch (std::runtime_error &e) {
+        std::cerr << "failed to load in .map file '" << map_path.string()
+                  << "': " << e.what() << "\n";
+        return 1;
+    }
+
+    std::cout << "map loaded\n";
+
     MapEntity &worldspawn = map.entities[0];
 
     std::cout << "map has " << map.n_triangles() << " tris\n";
     std::cout << "worldspawn max depth is " << worldspawn.bsp.max_depth()
               << "\n";
-
-    // map.textures.emplace_back("../textures/img.png");
 
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
@@ -42,8 +54,6 @@ int main()
             continue;
 
         prev_time = Time::get_ticks_ms();
-
-        map.entities[1].pos.x += delta_time;
 
         std::cout << "delta_time = " << delta_time << '\n';
         bool cam_in_solid = worldspawn.bsp.point_in_solid(cam.pos, worldspawn);
