@@ -4,10 +4,14 @@
 #include "../constants.hpp"
 #include "../plane.hpp"
 #include "../shape.hpp"
+#include "../utils/string.hpp"
 #include "wad.hpp"
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <cctype>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -31,6 +35,16 @@ constexpr size_t worldspawn_idx = 0;
 // each plane of each brush is represented by a triangle (and some other info)
 class BrushPlane {
 
+    // not necessary in the value format
+    void get_u_v_dirs();
+
+    // works for both quake and valve formats
+    void get_vs(std::istringstream &stream);
+
+    // constructor for the specific format
+    void construct_quake(std::string_view line);
+    void construct_valve(std::string_view line);
+
 public:
     std::array<Vec3, 3> vs;
     std::string texture;
@@ -39,7 +53,7 @@ public:
     Vec2 offset;
     Vec2 scale;
 
-    explicit BrushPlane(std::string_view line);
+    BrushPlane(std::string_view line, QuakeMapLoader::Format format);
 
     Plane get_plane() const;
     Vec2 get_point_tex_coord(const Vec3 &p) const;
@@ -49,15 +63,15 @@ public:
 class Brush {
 
     // finds the plane of the brush the given polygon is on
-    const BrushPlane *poly_plane(const Polygon &poly) const;
-    BrushPlane *poly_plane(const Polygon &poly);
+    const BrushPlane &poly_plane(const Polygon &poly) const;
+    BrushPlane &poly_plane(const Polygon &poly);
 
     ConvexShape get_shape() const;
 
 public:
     std::vector<BrushPlane> planes;
 
-    Brush(std::ifstream &file);
+    Brush(std::ifstream &file, QuakeMapLoader::Format format);
 
     std::vector<Triangle> get_tris(std::span<const Texture> textures) const;
 };
@@ -82,7 +96,7 @@ public:
 
     // file should be pointing to the line after the left curly marking the
     // start of the entity
-    explicit Entity(std::ifstream &file);
+    Entity(std::ifstream &file, QuakeMapLoader::Format format);
 
     size_t get_info_idx(std::string_view key) const;
     MapEntity to_map_entity(std::span<const Texture> textures) const;
@@ -122,10 +136,8 @@ EntityInfo::EntityInfo(std::string_view line)
     stream >> std::quoted(this->value);
 }
 
-BrushPlane::BrushPlane(std::string_view line)
+void BrushPlane::get_vs(std::istringstream &stream)
 {
-    std::istringstream stream((std::string(line)));
-
     for (auto &v : this->vs) {
         skip_char(stream, '(');
         stream >> v.x;
@@ -133,8 +145,65 @@ BrushPlane::BrushPlane(std::string_view line)
         stream >> v.z;
         skip_char(stream, ')');
     }
+}
+
+void BrushPlane::get_u_v_dirs()
+{
+    auto plane = this->get_plane();
+
+    Vec3 up(0.f, 1.f, 0.f);
+    Vec3 left(-1.f, 0.f, 0.f);
+
+    Vec3 back(0.f, 0.f, 1.f);
+
+    bool u_used_back = false;
+    bool v_used_back = false;
+
+    if (plane.normal.dot(up) < 1.f - Consts::epsilon) {
+        this->u = up.cross(plane.normal);
+    } else {
+        this->u = back.cross(plane.normal);
+        u_used_back = true;
+    }
+
+    if (plane.normal.dot(left) < 1.f - Consts::epsilon) {
+        this->v = left.cross(plane.normal);
+    } else {
+        this->v = back.cross(plane.normal);
+        v_used_back = true;
+    }
+
+    assert(!(u_used_back && v_used_back));
+}
+
+void BrushPlane::construct_quake(std::string_view line)
+{
+    std::istringstream stream((std::string(line)));
+
+    this->get_vs(stream);
 
     stream >> this->texture;
+    this->texture = String::str_tolower(this->texture);
+
+    stream >> this->offset.x;
+    stream >> this->offset.y;
+
+    stream >> this->rotation;
+
+    stream >> this->scale.x;
+    stream >> this->scale.y;
+
+    this->get_u_v_dirs();
+}
+
+void BrushPlane::construct_valve(std::string_view line)
+{
+    std::istringstream stream((std::string(line)));
+
+    this->get_vs(stream);
+
+    stream >> this->texture;
+    this->texture = String::str_tolower(this->texture);
 
     skip_char(stream, '[');
     stream >> this->u.x;
@@ -153,6 +222,20 @@ BrushPlane::BrushPlane(std::string_view line)
     stream >> this->rotation;
     stream >> this->scale.x;
     stream >> this->scale.y;
+}
+
+BrushPlane::BrushPlane(std::string_view line, QuakeMapLoader::Format format)
+{
+    switch (format) {
+
+    case QuakeMapLoader::Format::QUAKE_1:
+        this->construct_quake(line);
+        break;
+
+    case QuakeMapLoader::Format::VALVE:
+        this->construct_valve(line);
+        break;
+    }
 }
 
 Plane BrushPlane::get_plane() const
@@ -196,7 +279,7 @@ size_t BrushPlane::get_tex_idx(std::span<const Texture> textures) const
     return SIZE_MAX;
 }
 
-Brush::Brush(std::ifstream &file)
+Brush::Brush(std::ifstream &file, QuakeMapLoader::Format format)
 {
     std::string line;
     while (std::getline(file, line)) {
@@ -207,23 +290,37 @@ Brush::Brush(std::ifstream &file)
         else if (line.starts_with("}"))
             break;
         else
-            this->planes.emplace_back(line);
+            this->planes.emplace_back(line, format);
     }
 }
 
-const BrushPlane *Brush::poly_plane(const Polygon &poly) const
+const BrushPlane &Brush::poly_plane(const Polygon &poly) const
 {
+    float closest_dist = 10000.f;
+    const BrushPlane *closest = nullptr;
+
     for (const auto &plane : this->planes) {
-        if (poly.get_plane().is_coplanar(plane.get_plane()))
-            return &plane;
+        auto p = plane.get_plane();
+
+        float max_dist = 0.f;
+        for (const auto &v : poly.vs) {
+            float dist = std::abs(p.normal.dot(v) - p.d);
+            max_dist = std::max(max_dist, dist);
+        }
+
+        if (max_dist < closest_dist) {
+            closest_dist = max_dist;
+            closest = &plane;
+        }
     }
 
-    return nullptr;
+    assert(closest);
+    return *closest;
 }
 
-BrushPlane *Brush::poly_plane(const Polygon &poly)
+BrushPlane &Brush::poly_plane(const Polygon &poly)
 {
-    return const_cast<BrushPlane *>(std::as_const(*this).poly_plane(poly));
+    return const_cast<BrushPlane &>(std::as_const(*this).poly_plane(poly));
 }
 
 ConvexShape Brush::get_shape() const
@@ -247,18 +344,17 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
     auto shape = this->get_shape();
 
     for (const auto &poly : shape.polys) {
-        const BrushPlane *plane = this->poly_plane(poly);
-        assert(plane);
+        const BrushPlane &plane = this->poly_plane(poly);
 
-        size_t tex_idx = plane->get_tex_idx(textures);
+        size_t tex_idx = plane.get_tex_idx(textures);
         if (tex_idx == SIZE_MAX)
-            throw std::runtime_error("error: texture " + plane->texture +
-                                     "doesn't exist.");
+            throw std::runtime_error("error: texture " + plane.texture +
+                                     " doesn't exist.");
 
         auto poly_tris = poly.get_triangles();
         for (auto &tri : poly_tris) {
             for (size_t i = 0; i < tri.vs.size(); ++i) {
-                tri.vts[i] = plane->get_point_tex_coord(tri.vs[i]);
+                tri.vts[i] = plane.get_point_tex_coord(tri.vs[i]);
             }
             tri.tex_idx = tex_idx;
         }
@@ -269,7 +365,7 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
     return tris;
 }
 
-Entity::Entity(std::ifstream &file)
+Entity::Entity(std::ifstream &file, QuakeMapLoader::Format format)
 {
     std::string line;
     while (std::getline(file, line)) {
@@ -280,7 +376,7 @@ Entity::Entity(std::ifstream &file)
         else if (line.starts_with("}"))
             break;
         else if (line.starts_with("{"))
-            this->brushes.emplace_back(file);
+            this->brushes.emplace_back(file, format);
         else
             this->info.emplace_back(line);
     }
@@ -319,6 +415,7 @@ MapEntity Entity::to_map_entity(std::span<const Texture> textures) const
     return MapEntity(tris, this->get_pos());
 }
 
+// if the entity doesn't have an origin, the pos defaults to 0
 Vec3 Entity::get_pos() const
 {
     size_t idx = this->get_info_idx("origin");
@@ -351,7 +448,8 @@ void put_worldspawn_at_idx(std::vector<Entity> &entities, size_t idx)
     throw std::runtime_error("error: missing the worldspawn entity.");
 }
 
-std::vector<Entity> get_entities(std::ifstream &file)
+std::vector<Entity> get_entities(std::ifstream &file,
+                                 QuakeMapLoader::Format format)
 {
     std::vector<Entity> entities;
 
@@ -364,7 +462,7 @@ std::vector<Entity> get_entities(std::ifstream &file)
         else if (line.starts_with("}"))
             throw std::runtime_error("error: extraneous '}'");
         else if (line.starts_with("{"))
-            entities.emplace_back(file);
+            entities.emplace_back(file, format);
     }
 
     put_worldspawn_at_idx(entities, worldspawn_idx);
@@ -386,12 +484,13 @@ std::vector<Texture> load_wad_file(const Entity &worldspawn,
     }
 }
 
-Map read_file(std::ifstream &file, const std::filesystem::path &path)
+Map read_file(std::ifstream &file, const std::filesystem::path &path,
+              QuakeMapLoader::Format format)
 {
     std::filesystem::path dir = path;
     dir.remove_filename();
 
-    auto entities = get_entities(file);
+    auto entities = get_entities(file, format);
     if (entities.empty())
         throw std::runtime_error("error: .map file '" + path.string() +
                                  "' is empty.");
@@ -410,7 +509,7 @@ Map read_file(std::ifstream &file, const std::filesystem::path &path)
 
 } // namespace
 
-Map QuakeMapLoader::load_file(const std::filesystem::path &path)
+Map QuakeMapLoader::load_file(const std::filesystem::path &path, Format format)
 {
     std::ifstream file(path);
     if (file.fail()) {
@@ -418,5 +517,5 @@ Map QuakeMapLoader::load_file(const std::filesystem::path &path)
                                  ": " + std::strerror(errno));
     }
 
-    return read_file(file, path);
+    return read_file(file, path, format);
 }

@@ -1,4 +1,5 @@
 #include "texture.hpp"
+#include "utils/string.hpp"
 #include <cerrno>
 #include <cstdint>
 #include <cstdlib>
@@ -18,7 +19,7 @@ const std::vector<uint8_t> &MipMapLevel::get_pixels() const
 
 Texture::Texture(std::span<const MipMapLevel, n_mipmap_lvls> mipmaps,
                  uint32_t width, uint32_t height, std::string_view name)
-    : width(width), height(height), name(std::string(name))
+    : width(width), height(height), name(String::str_tolower(std::string(name)))
 {
     this->mipmaps.assign(mipmaps.begin(), mipmaps.end());
 }

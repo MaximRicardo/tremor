@@ -31,6 +31,7 @@ private:
     uint32_t height;
 
 public:
+    // always lowercase
     std::string name;
 
     Texture(std::span<const MipMapLevel, n_mipmap_lvls> mipmaps, uint32_t width,
