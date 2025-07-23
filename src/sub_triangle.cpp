@@ -255,6 +255,9 @@ size_t select_mipmap(const SubTriangle &tri, const Texture &tex)
     else
         lvl = 3;
 
+    // nah bro this mipmapping is so ass i'm turning it off
+    lvl = 0;
+
     return std::min(lvl, tex.n_mipmap_lvls);
 
     // can't manage to get this to work
