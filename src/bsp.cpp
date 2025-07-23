@@ -36,6 +36,8 @@ BSP::BSP(std::span<const Triangle> tris)
     if (tris.size() == 0)
         return;
 
+    std::cout << "constructing bsp\n";
+
     this->info = std::make_unique<InNodeInfo>();
     this->innode_info().plane = tris[0].get_plane();
 
@@ -43,7 +45,11 @@ BSP::BSP(std::span<const Triangle> tris)
     other_tris.assign(tris.begin() + 1, tris.end());
     this->create_outline(other_tris);
 
+    std::cout << "done creating outline bsp\n";
+
     this->fill_with_triangles(tris);
+
+    std::cout << "done constructing bsp\n";
 }
 
 bool BSP::has_innode_info() const
@@ -131,6 +137,9 @@ void BSP::insert_tris_in_front(const Triangle &tri, bool leaf_insert)
 
 void BSP::insert(const Triangle &tri)
 {
+    if (tri.get_area() < Consts::epsilon)
+        return;
+
     if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri, false);
         this->insert_tris_in_front(tri, false);
