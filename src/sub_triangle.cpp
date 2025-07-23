@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <span>
@@ -187,6 +188,10 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
         p_tex_coord.x = 0.f;
     if (std::isnan(p_tex_coord.y))
         p_tex_coord.y = 0.f;
+
+    // textures wrap around
+    p_tex_coord.x = std::fmod(std::abs(p_tex_coord.x), 1.f);
+    p_tex_coord.y = std::fmod(std::abs(p_tex_coord.y), 1.f);
 
     // flip around the y axis cuz the texture buffers will be assuming Y points
     // down instead of up.
