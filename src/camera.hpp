@@ -17,8 +17,9 @@ public:
     Angle yaw, pitch;
     Angle max_pitch, min_pitch;
     Angle hfov, vfov;
+    float move_speed;
 
-    Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov = Angle(0.f),
+    Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov, float move_speed,
            Angle max_pitch = Angle(85.f, Angle::Type::DEGREES),
            Angle min_pitch = Angle(-85.f, Angle::Type::DEGREES));
 

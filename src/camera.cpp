@@ -7,10 +7,11 @@
 #include <algorithm>
 #include <cmath>
 
-Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov, Angle max_pitch,
-               Angle min_pitch)
+Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov, float move_speed,
+               Angle max_pitch, Angle min_pitch)
     : pos(pos), yaw(yaw), pitch(pitch), max_pitch(max_pitch),
-      min_pitch(min_pitch), hfov(hfov), vfov(FOV::horizontal_to_vertical(hfov))
+      min_pitch(min_pitch), hfov(hfov), vfov(FOV::horizontal_to_vertical(hfov)),
+      move_speed(move_speed)
 {}
 
 void Camera::limit_rotation()
@@ -23,7 +24,7 @@ void Camera::limit_rotation()
 
 void Camera::handle_input(float delta_time, Screen &screen)
 {
-    float mov_dist = delta_time * 16.f;
+    float mov_dist = delta_time * move_speed;
     float turn_speed = delta_time;
 
     if (Input::is_key_down(Input::Key::W, screen))

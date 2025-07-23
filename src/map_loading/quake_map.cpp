@@ -142,9 +142,10 @@ void BrushPlane::get_vs(std::istringstream &stream)
 {
     for (auto &v : this->vs) {
         skip_char(stream, '(');
+        // y and z are swapped in .map files
         stream >> v.x;
-        stream >> v.y;
         stream >> v.z;
+        stream >> v.y;
         skip_char(stream, ')');
     }
 }
@@ -176,6 +177,9 @@ void BrushPlane::get_u_v_dirs()
     }
 
     assert(!(u_used_back && v_used_back));
+    // in case NDEBUG is defined
+    (void)u_used_back;
+    (void)v_used_back;
 }
 
 void BrushPlane::construct_quake(std::string_view line)
@@ -245,9 +249,9 @@ BrushPlane::BrushPlane(std::string_view line, QuakeMapLoader::Format format)
 
 Plane BrushPlane::get_plane() const
 {
-    Vec3 n = -(this->vs[1] - this->vs[0])
-                  .cross(this->vs[2] - this->vs[0])
-                  .normalize();
+    Vec3 n = (this->vs[1] - this->vs[0])
+                 .cross(this->vs[2] - this->vs[0])
+                 .normalize();
     float d = n.dot(this->vs[0]);
 
     return Plane(n, d);

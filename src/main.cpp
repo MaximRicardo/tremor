@@ -21,11 +21,15 @@ int main()
     FixedArray<Color> frame(Res::size);
     FixedArray<float> depth_buffer(Res::size);
 
-    Camera cam(Vec3(0.f, 0.f, -2.f), Angle(0.f), Angle(0.f),
-               Angle(90.f, Angle::Type::DEGREES));
+    Camera cam(Vec3(721.f, 110.f, 1046.f), Angle(0.f), Angle(0.f),
+               Angle(90.f, Angle::Type::DEGREES), 100.f);
+    /*
+    Camera cam(Vec3(0.f, 0.f, -32.f), Angle(0.f), Angle(0.f),
+               Angle(90.f, Angle::Type::DEGREES), 100.f);
+               */
 
     Map map;
-    std::filesystem::path map_path = "../maps/quake_test.map";
+    std::filesystem::path map_path = "../maps/map.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);

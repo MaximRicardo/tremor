@@ -33,8 +33,7 @@ BSP::BSP(const Plane &plane, BSP *parent) : parent(parent)
 // splitting them with every innode's splitting plane along the way.
 BSP::BSP(std::span<const Triangle> tris)
 {
-    if (tris.size() == 0)
-        return;
+    assert(tris.size() > 0);
 
     std::cout << "constructing bsp\n";
 
