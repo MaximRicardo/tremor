@@ -1,6 +1,7 @@
 #include "mat4x4.hpp"
 #include "vector/vec3.hpp"
 #include <array>
+#include <cmath>
 #include <cstddef>
 
 Matrix4x4::Matrix4x4(const decltype(elems) &elems) : elems(elems) {}
@@ -17,6 +18,43 @@ Matrix4x4 Matrix4x4::translate(const Vec3 &v)
     return Matrix4x4(decltype(elems){
         std::array{1.f, 0.f, 0.f, 0.f}, std::array{0.f, 1.f, 0.f, 0.f},
         std::array{0.f, 0.f, 1.f, 0.f}, std::array{v.x, v.y, v.z, 1.f}});
+}
+
+Matrix4x4 Matrix4x4::scale(const Vec3 &v)
+{
+    return Matrix4x4(decltype(elems){
+        std::array{v.x, 0.f, 0.f, 0.f}, std::array{0.f, v.y, 0.f, 0.f},
+        std::array{0.f, 0.f, v.z, 0.f}, std::array{0.f, 0.f, 0.f, 1.f}});
+}
+
+Matrix4x4 Matrix4x4::rotation_x(const Angle &angle)
+{
+    float c = std::cos(angle.get());
+    float s = std::sin(angle.get());
+
+    return Matrix4x4(decltype(elems){
+        std::array{1.f, 0.f, 0.f, 0.f}, std::array{0.f, c, s, 0.f},
+        std::array{0.f, -s, c, 0.f}, std::array{0.f, 0.f, 0.f, 1.f}});
+}
+
+Matrix4x4 Matrix4x4::rotation_y(const Angle &angle)
+{
+    float c = std::cos(angle.get());
+    float s = std::sin(angle.get());
+
+    return Matrix4x4(decltype(elems){
+        std::array{c, 0.f, -s, 0.f}, std::array{0.f, 1.f, 0.f, 0.f},
+        std::array{s, 0.f, c, 0.f}, std::array{0.f, 0.f, 0.f, 1.f}});
+}
+
+Matrix4x4 Matrix4x4::rotation_z(const Angle &angle)
+{
+    float c = std::cos(angle.get());
+    float s = std::sin(angle.get());
+
+    return Matrix4x4(decltype(elems){
+        std::array{c, s, 0.f, 0.f}, std::array{-s, c, 0.f, 0.f},
+        std::array{0.f, 0.f, 1.f, 0.f}, std::array{0.f, 0.f, 0.f, 1.f}});
 }
 
 Vec4 Matrix4x4::operator*(const Vec4 &v) const

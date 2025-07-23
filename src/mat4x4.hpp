@@ -1,5 +1,6 @@
 #pragma once
 
+#include "angle.hpp"
 #include "vector/vec3.hpp"
 #include "vector/vec4.hpp"
 #include <array>
@@ -17,6 +18,10 @@ public:
 
     static Matrix4x4 identity();
     static Matrix4x4 translate(const Vec3 &v);
+    static Matrix4x4 scale(const Vec3 &v);
+    static Matrix4x4 rotation_x(const Angle &angle);
+    static Matrix4x4 rotation_y(const Angle &angle);
+    static Matrix4x4 rotation_z(const Angle &angle);
 
     Vec4 operator*(const Vec4 &v) const;
     Matrix4x4 operator*(float x) const;
