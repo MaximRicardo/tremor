@@ -10,7 +10,7 @@ enum class Format {
 
     DETECT,
     QUAKE_1,
-    VALVE,
+    VALVE_220,
 
 };
 

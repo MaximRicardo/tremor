@@ -234,7 +234,7 @@ BrushPlane::BrushPlane(std::string_view line, QuakeMapLoader::Format format)
         this->construct_quake(line);
         break;
 
-    case QuakeMapLoader::Format::VALVE:
+    case QuakeMapLoader::Format::VALVE_220:
         this->construct_valve(line);
         break;
 
@@ -373,7 +373,7 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
 QuakeMapLoader::Format map_version_to_format(std::string_view version)
 {
     if (version == "220")
-        return QuakeMapLoader::Format::VALVE;
+        return QuakeMapLoader::Format::VALVE_220;
 
     throw std::runtime_error("error: unsupported .map version '" +
                              std::string(version) + "'.");
@@ -569,7 +569,7 @@ std::string QuakeMapLoader::format_name(Format format)
     case QuakeMapLoader::Format::QUAKE_1:
         return "quake 1";
 
-    case QuakeMapLoader::Format::VALVE:
+    case QuakeMapLoader::Format::VALVE_220:
         return "valve 220";
     }
 }
