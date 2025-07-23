@@ -1,5 +1,4 @@
 #include "plane.hpp"
-#include "constants.hpp"
 #include "triangle.hpp"
 #include <array>
 #include <cassert>
@@ -190,12 +189,12 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
     return ret;
 }
 
-bool Plane::is_coplanar(const Plane &plane) const
+bool Plane::is_coplanar(const Plane &plane, float epsilon) const
 {
-    return (this->normal.dot(plane.normal) > 1.f - Consts::epsilon &&
-            std::abs(this->d - plane.d) < Consts::epsilon) ||
-           (this->normal.dot(-plane.normal) > 1.f - Consts::epsilon &&
-            std::abs(this->d + plane.d) < Consts::epsilon);
+    return (this->normal.dot(plane.normal) > 1.f - epsilon &&
+            std::abs(this->d - plane.d) < epsilon) ||
+           (this->normal.dot(-plane.normal) > 1.f - epsilon &&
+            std::abs(this->d + plane.d) < epsilon);
 }
 
 bool Plane::is_point_behind(const Vec3 &p) const
