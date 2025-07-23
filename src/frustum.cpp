@@ -1,16 +1,8 @@
 #include "frustum.hpp"
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <span>
-
-namespace {
-
-Vec3 box_minmax(const AABB &box, bool get_min)
-{
-    return get_min ? box.min : box.max;
-}
-
-} // namespace
 
 Frustum::Frustum(std::span<const Plane, 6> planes)
 {
@@ -46,18 +38,16 @@ bool Frustum::contains(const Vec3 &p) const
     return true;
 }
 
-bool Frustum::b_box_maybe_inside(const AABB &box) const
+bool Frustum::maybe_partially_contains(const AABB &box) const
 {
     for (const auto &plane : this->planes) {
-        bool nx = plane.normal.x > 0.f;
-        bool ny = plane.normal.y > 0.f;
-        bool nz = plane.normal.z > 0.f;
+        bool none_behind = true;
+        for (const auto &v : box.get_vertices()) {
+            if (plane.is_point_behind(v))
+                none_behind = false;
+        }
 
-        float dot = (plane.normal.x * box_minmax(box, nx).x) +
-                    (plane.normal.y * box_minmax(box, ny).y) +
-                    (plane.normal.z * box_minmax(box, nz).z);
-
-        if (dot > plane.d)
+        if (none_behind)
             return false;
     }
 

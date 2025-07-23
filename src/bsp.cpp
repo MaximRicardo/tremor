@@ -190,24 +190,23 @@ void BSP::render(const MapEntity &parent, std::span<Color> frame,
                  std::span<float> depth_buffer, const Camera &cam,
                  std::span<const Texture> texs) const
 {
-    Vec3 rel_cam = parent.get_inv_transform() * Vec4(cam.pos, 1.f);
+    Camera rel_cam = cam;
+    rel_cam.pos = parent.get_inv_transform() * Vec4(cam.pos, 1.f);
 
     if (this->is_leaf()) {
         for (const auto &tri : this->leaf_info().edge_tris) {
-            if (tri.get_plane().is_point_behind(rel_cam))
+            if (tri.get_plane().is_point_behind(rel_cam.pos))
                 continue;
             tri.render(parent.get_transform(), frame, depth_buffer, cam, texs);
         }
         return;
     }
 
-    /*
-    if (!cam.get_frustum().b_box_maybe_inside(this->b_box)) {
+    if (!rel_cam.get_frustum().maybe_partially_contains(this->b_box)) {
         return;
     }
-    */
 
-    bool cam_in_front = !this->innode_info().plane.is_point_behind(rel_cam);
+    bool cam_in_front = !this->innode_info().plane.is_point_behind(rel_cam.pos);
 
     // since we wanna render everything back to front, we gotta flip around
     // behind and in front depending on whether the camera's definition of in

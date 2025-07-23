@@ -5,7 +5,9 @@
 #include "frustum.hpp"
 #include "input/input.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <span>
 
 Camera::Camera(Vec3 pos, Angle yaw, Angle pitch, Angle hfov, float move_speed,
                Angle max_pitch, Angle min_pitch)
@@ -99,36 +101,57 @@ Vec3 Camera::move_up_vec() const
     return v;
 }
 
+// DO NOT FUCKING TOUCH!
 Frustum Camera::get_frustum() const
 {
     Vec3 forward = this->look_forward_vec();
-    Vec3 right = this->look_right_vec();
+    Vec3 left = -this->look_right_vec();
     Vec3 up = this->look_up_vec();
 
-    float far_half_h = Consts::z_far * std::tan(this->vfov.get() * 0.5f);
-    float far_half_w = Consts::z_far * std::tan(this->hfov.get() * 0.5f);
+    Vec3 near_center = this->pos + forward * Consts::z_near;
     Vec3 far_center = this->pos + forward * Consts::z_far;
 
+    float near_half_h = std::tan(this->vfov.get() / 2.f) * Consts::z_near;
+    float near_half_w = std::tan(this->hfov.get() / 2.f) * Consts::z_near;
+    float far_half_h = std::tan(this->vfov.get() / 2.f) * Consts::z_far;
+    float far_half_w = std::tan(this->hfov.get() / 2.f) * Consts::z_far;
+
+    Vec3 near_top_left = near_center + up * near_half_h - left * near_half_w;
+    Vec3 near_top_right = near_center + up * near_half_h + left * near_half_w;
+    Vec3 near_bottom_left = near_center - up * near_half_h - left * near_half_w;
+    Vec3 near_bottom_right =
+        near_center - up * near_half_h + left * near_half_w;
+
+    Vec3 far_top_left = far_center + up * far_half_h - left * far_half_w;
+    Vec3 far_top_right = far_center + up * far_half_h + left * far_half_w;
+    Vec3 far_bottom_left = far_center - up * far_half_h - left * far_half_w;
+    Vec3 far_bottom_right = far_center - up * far_half_h + left * far_half_w;
+
     std::array<Plane, Frustum::n_faces> planes;
+    Vec3 p0, p1, p2;
 
-    planes[Frustum::near_face] =
-        Plane(-forward, -(forward.dot(this->pos) + Consts::z_near));
-    planes[Frustum::far_face] =
-        Plane(forward, forward.dot(this->pos) + Consts::z_far);
+    p0 = near_bottom_left;
+    p1 = far_bottom_left;
+    p2 = far_top_left;
+    planes[Frustum::left_face] = Plane(std::array{p0, p1, p2});
 
-    planes[Frustum::left_face] = Plane(
-        ((far_center - right * far_half_w) - this->pos).cross(up).normalize(),
-        this->pos);
-    planes[Frustum::right_face] = Plane(
-        (-(far_center + right * far_half_w) - this->pos).cross(up).normalize(),
-        this->pos);
+    p0 = near_top_right;
+    p1 = far_top_right;
+    p2 = far_bottom_right;
+    planes[Frustum::right_face] = Plane(std::array{p0, p1, p2});
 
-    planes[Frustum::top_face] = Plane(
-        ((far_center + up * far_half_h) - this->pos).cross(right).normalize(),
-        this->pos);
-    planes[Frustum::bottom_face] = Plane(
-        (-(far_center - up * far_half_h) - this->pos).cross(right).normalize(),
-        this->pos);
+    p0 = near_top_left;
+    p1 = far_top_left;
+    p2 = far_top_right;
+    planes[Frustum::top_face] = Plane(std::array{p0, p1, p2});
+
+    p0 = near_bottom_right;
+    p1 = far_bottom_right;
+    p2 = far_bottom_left;
+    planes[Frustum::bottom_face] = Plane(std::array{p0, p1, p2});
+
+    planes[Frustum::near_face] = Plane(-forward, near_center);
+    planes[Frustum::far_face] = Plane(forward, far_center);
 
     return Frustum(planes);
 }

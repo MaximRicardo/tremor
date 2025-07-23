@@ -25,5 +25,6 @@ public:
     Vec3 up_vec() const;
 
     bool contains(const Vec3 &p) const;
-    bool b_box_maybe_inside(const AABB &box) const;
+    // HAS A LOT OF FALSE POSITIVES!
+    bool maybe_partially_contains(const AABB &box) const;
 };

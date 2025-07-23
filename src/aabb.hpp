@@ -17,6 +17,7 @@ public:
 
     bool contains(const Vec3 &p) const;
     bool contains(const AABB &box) const;
+    bool partially_contains(const AABB &box) const;
     void clip(const Plane &plane);
     bool intersects(const Plane &plane) const;
     std::vector<Vec3> intersection_points(const Plane &plane) const;

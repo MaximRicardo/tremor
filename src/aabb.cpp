@@ -1,27 +1,61 @@
 #include "aabb.hpp"
+#include "constants.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <iostream>
+
+namespace {
+
+class Line1D {
+
+public:
+    float min_x, max_x;
+
+    Line1D(float min_x, float max_x) : min_x(min_x), max_x(max_x) {}
+
+    bool partially_contains(const Line1D &other) const;
+};
+
+bool Line1D::partially_contains(const Line1D &other) const
+{
+    return this->max_x >= other.min_x - Consts::epsilon &&
+           other.max_x >= this->min_x - Consts::epsilon;
+}
+
+} // namespace
 
 AABB::AABB() {};
 AABB::AABB(Vec3 min, Vec3 max) : min(min), max(max) {}
 
 bool AABB::contains(const Vec3 &p) const
 {
-    bool x_inside = min.x <= p.x && p.x <= max.x;
-    bool y_inside = min.y <= p.y && p.y <= max.y;
-    bool z_inside = min.z <= p.z && p.z <= max.z;
+    bool x_inside =
+        min.x - Consts::epsilon <= p.x && p.x <= max.x + Consts::epsilon;
+    bool y_inside =
+        min.y - Consts::epsilon <= p.y && p.y <= max.y + Consts::epsilon;
+    bool z_inside =
+        min.z - Consts::epsilon <= p.z && p.z <= max.z + Consts::epsilon;
     return x_inside && y_inside && z_inside;
 }
 
 bool AABB::contains(const AABB &box) const
 {
-    std::cout << "self min = (" << this->min << "), self max = (" << this->max
-              << ")\n";
-    std::cout << "other min = (" << box.min << "), other max = (" << box.max
-              << ")\n";
     return this->contains(box.min) && this->contains(box.max);
+}
+
+bool AABB::partially_contains(const AABB &box) const
+{
+    Line1D this_x(this->min.x, this->max.x);
+    Line1D this_y(this->min.y, this->max.y);
+    Line1D this_z(this->min.z, this->max.z);
+
+    Line1D other_x(box.min.x, box.max.x);
+    Line1D other_y(box.min.y, box.max.y);
+    Line1D other_z(box.min.z, box.max.z);
+
+    return this_x.partially_contains(other_x) &&
+           this_y.partially_contains(other_y) &&
+           this_z.partially_contains(other_z);
 }
 
 std::array<Vec3, 8> AABB::get_vertices() const
