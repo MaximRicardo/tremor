@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aabb.hpp"
+#include "frame.hpp"
 #include "plane.hpp"
 #include "triangle.hpp"
 #include <cstdint>
@@ -74,8 +75,7 @@ public:
 
     explicit BSP(std::span<const Triangle> tris);
 
-    void render(const MapEntity &parent_entity, std::span<Color> frame,
-                std::span<float> depth_buffer, const Camera &cam,
+    void render(const MapEntity &parent_entity, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
     int32_t n_triangles() const;
     int32_t max_depth() const;

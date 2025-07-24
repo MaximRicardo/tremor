@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.hpp"
+#include "frame.hpp"
 #include "texture.hpp"
 #include "vector/vec2.hpp"
 #include "vector/vec3.hpp"
@@ -33,8 +34,7 @@ public:
 
     std::array<Vec2i, 3> get_screen_vs() const;
     void project_to_scr(const Camera &cam);
-    void render(std::span<Color> frame, std::span<float> depth_buffer,
-                std::span<const Texture> texs);
+    void render(Frame &frame, std::span<const Texture> texs);
     // goes up to 1 for the whole texture
     float tex_space_area() const;
 };

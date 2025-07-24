@@ -30,19 +30,18 @@ Matrix4x4 MapEntity::get_inv_transform() const
     return mat;
 }
 
-void MapEntity::render(std::span<Color> frame, std::span<float> depth_buffer,
-                       const Camera &cam, std::span<const Texture> texs) const
+void MapEntity::render(Frame &frame, const Camera &cam,
+                       std::span<const Texture> texs) const
 {
     if (is_point_entity())
         return;
-    this->bsp->render(*this, frame, depth_buffer, cam, texs);
+    this->bsp->render(*this, frame, cam, texs);
 }
 
-void Map::render(std::span<Color> frame, std::span<float> depth_buffer,
-                 const Camera &cam) const
+void Map::render(Frame &frame, const Camera &cam) const
 {
     for (auto &entity : this->entities) {
-        entity.render(frame, depth_buffer, cam, this->textures);
+        entity.render(frame, cam, this->textures);
     }
 }
 

@@ -1,5 +1,6 @@
 #include "sub_triangle.hpp"
 #include "camera.hpp"
+#include "frame.hpp"
 #include "index.hpp"
 #include "palette.hpp"
 #include "resolution.hpp"
@@ -119,12 +120,12 @@ TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
     auto y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
 
     // skip any edges outside the screen
-    if (y_max < 0 || y_min >= static_cast<int32_t>(Res::height)) {
+    if (y_max < 0 || y_min >= Res::height) {
         edges.n_edges = 0;
         return edges;
     }
     y_min = std::max(y_min, 0);
-    y_max = std::min(y_max, static_cast<int32_t>(Res::height - 1));
+    y_max = std::min(y_max, Res::height - 1);
 
     edges.y_offset = y_min;
     edges.n_edges = y_max - y_min + 1;
@@ -281,19 +282,18 @@ size_t select_mipmap(const SubTriangle &tri, const Texture &tex)
 
 //
 // tri               - the triangle the line belongs to
-void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
-                            std::span<float> depth_buffer,
+void render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
                             const SubTriangle &tri,
                             std::span<const Texture> texs)
 {
-    if (y < 0 || y >= static_cast<int>(Res::height))
+    if (y < 0 || y >= Res::height)
         return;
 
-    if (x_0 >= static_cast<int>(Res::width) || x_1 < 0)
+    if (x_0 >= Res::width || x_1 < 0)
         return;
 
     x_0 = std::max(x_0, 0);
-    x_1 = std::min(x_1, static_cast<int>(Res::width - 1));
+    x_1 = std::min(x_1, Res::width - 1);
 
     for (int x = x_0; x <= x_1; ++x) {
         size_t idx = Index::conv_2d_to_1d(Vec2i(x, y), Res::width);
@@ -305,10 +305,10 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
 
         float z = interpolate_z(tri, bary_coords);
 #ifndef m_DO_NOT_CHECK_DEPTH_BUFFER
-        if (depth_buffer[idx] < z)
+        if (frame.depths[idx] < z)
             continue;
 #endif
-        depth_buffer[idx] = z;
+        frame.depths[idx] = z;
 
         auto &tex = texs[tri.parent->tex_idx];
 
@@ -316,7 +316,7 @@ void render_horizontal_line(int y, int x_0, int x_1, std::span<Color> frame,
         auto texel_coord = get_tex_coords(tri, bary_coords, z, tex, mipmap);
         size_t texel = Index::conv_2d_to_1d(texel_coord, tex.get_width(mipmap));
 
-        frame[idx] = Palette::palette[tex.get_pixels(mipmap)[texel]];
+        frame.pixels[idx] = Palette::palette[tex.get_pixels(mipmap)[texel]];
     }
 }
 
@@ -338,15 +338,14 @@ void SubTriangle::project_to_scr(const Camera &cam)
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 
-void SubTriangle::render(std::span<Color> frame, std::span<float> depth_buffer,
-                         std::span<const Texture> texs)
+void SubTriangle::render(Frame &frame, std::span<const Texture> texs)
 {
     TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
 
     for (size_t i = 0; i < edges.n_edges; i++) {
         int32_t y = i + edges.y_offset;
         render_horizontal_line(y, edges.starts[i], edges.ends[i] - 1, frame,
-                               depth_buffer, *this, texs);
+                               *this, texs);
     }
 }
 

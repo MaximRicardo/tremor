@@ -186,8 +186,7 @@ void BSP::fill_with_triangles(std::span<const Triangle> tris)
     }
 }
 
-void BSP::render(const MapEntity &parent, std::span<Color> frame,
-                 std::span<float> depth_buffer, const Camera &cam,
+void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
                  std::span<const Texture> texs) const
 {
     Camera rel_cam = cam;
@@ -197,7 +196,7 @@ void BSP::render(const MapEntity &parent, std::span<Color> frame,
         for (const auto &tri : this->leaf_info().edge_tris) {
             if (tri.get_plane().is_point_behind(rel_cam.pos))
                 continue;
-            tri.render(parent.get_transform(), frame, depth_buffer, cam, texs);
+            tri.render(parent.get_transform(), frame, cam, texs);
         }
         return;
     }
@@ -215,10 +214,10 @@ void BSP::render(const MapEntity &parent, std::span<Color> frame,
     auto &last = cam_in_front ? this->in_front : this->behind;
 
     if (first)
-        first->render(parent, frame, depth_buffer, cam, texs);
+        first->render(parent, frame, cam, texs);
 
     if (last)
-        last->render(parent, frame, depth_buffer, cam, texs);
+        last->render(parent, frame, cam, texs);
 }
 
 int32_t BSP::n_triangles() const

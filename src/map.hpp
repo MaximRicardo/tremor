@@ -2,6 +2,7 @@
 
 #include "bsp.hpp"
 #include "camera.hpp"
+#include "frame.hpp"
 #include "mat4x4.hpp"
 #include "texture.hpp"
 #include "triangle.hpp"
@@ -24,8 +25,8 @@ public:
     bool is_point_entity() const;
     Matrix4x4 get_transform() const;
     Matrix4x4 get_inv_transform() const;
-    void render(std::span<Color> frame, std::span<float> depth_buffer,
-                const Camera &cam, std::span<const Texture> texs) const;
+    void render(Frame &frame, const Camera &cam,
+                std::span<const Texture> texs) const;
 };
 
 class Map {
@@ -37,8 +38,7 @@ public:
 
     // no constructor, MUAH HAH HAH HA
 
-    void render(std::span<Color> frame, std::span<float> depth_buffer,
-                const Camera &cam) const;
+    void render(Frame &frame, const Camera &cam) const;
     Vec3 get_player_start() const;
     size_t n_triangles() const;
     const MapEntity *find_entity(std::string_view name) const;

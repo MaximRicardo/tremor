@@ -83,15 +83,15 @@ Triangle::ProjectRet Triangle::project(const Matrix4x4 &transform,
     return split_tri_with_near_plane(*this, cam_vs, cam);
 }
 
-void Triangle::render(const Matrix4x4 &transform, std::span<Color> frame,
-                      std::span<float> depth_buffer, const Camera &cam,
+void Triangle::render(const Matrix4x4 &transform, Frame &frame,
+                      const Camera &cam,
                       const std::span<const Texture> texs) const
 {
     Triangle::ProjectRet project_ret;
     project_ret = this->project(transform, cam);
 
     for (unsigned i = 0; i < project_ret.n_sub_tris; i++) {
-        project_ret.sub_tris[i].render(frame, depth_buffer, texs);
+        project_ret.sub_tris[i].render(frame, texs);
     }
 }
 

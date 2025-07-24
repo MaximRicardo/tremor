@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.hpp"
+#include "frame.hpp"
 #include "mat4x4.hpp"
 #include "sub_triangle.hpp"
 #include "texture.hpp"
@@ -36,8 +37,7 @@ public:
     Triangle();
     Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts, size_t tex_idx);
 
-    void render(const Matrix4x4 &tranform, std::span<Color> frame,
-                std::span<float> depth_buffer, const Camera &cam,
+    void render(const Matrix4x4 &tranform, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
 
     Plane get_plane() const;

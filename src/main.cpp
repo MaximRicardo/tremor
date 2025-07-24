@@ -1,13 +1,11 @@
 #include "bsp.hpp"
 #include "camera.hpp"
-#include "color.hpp"
+#include "frame.hpp"
 #include "input/input.hpp"
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
-#include "utils/fixed_array.hpp"
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -17,17 +15,14 @@
 namespace {
 
 void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
-                   uint32_t upscaled_height, Screen &screen,
-                   FixedArray<Color> &frame, FixedArray<float> &depth_buffer)
+                   uint32_t upscaled_height, Screen &screen, Frame &frame)
 {
     Res::width = width;
     Res::height = height;
     Res::upscaled_width = upscaled_width;
     Res::upscaled_height = upscaled_height;
 
-    frame = FixedArray<Color>(Res::n_pixels());
-    depth_buffer = FixedArray<float>(Res::n_pixels());
-
+    frame.update_resolution();
     screen.update_resolution();
 }
 
@@ -44,9 +39,6 @@ int main(int argc, char *argv[])
     }
 
     Screen screen("Tremor");
-
-    FixedArray<Color> frame(Res::n_pixels());
-    FixedArray<float> depth_buffer(Res::n_pixels());
 
     Map map;
     std::filesystem::path map_path = "../maps/map.map";
@@ -71,6 +63,7 @@ int main(int argc, char *argv[])
     Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES), 100.f);
 
+    Frame frame;
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
         float delta_time =
@@ -82,22 +75,19 @@ int main(int argc, char *argv[])
 
         prev_time = Time::get_ticks_ms();
 
+        frame.clear();
+
         std::cout << "delta_time = " << delta_time << '\n';
         bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 
-        for (std::size_t i = 0; i < Res::n_pixels(); i++) {
-            frame[i] = Color(0, 0, 0);
-            depth_buffer[i] = 10000.f;
-        }
-
         cam.handle_input(delta_time, screen);
         if (Input::key_pressed_once(Input::Key::R, screen))
             resize_window(320, 200, Res::upscaled_width, Res::upscaled_height,
-                          screen, frame, depth_buffer);
+                          screen, frame);
         else if (Input::key_pressed_once(Input::Key::F, screen))
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
-                          screen, frame, depth_buffer);
+                          screen, frame);
 
         /*
         for (auto &tri : tris) {
@@ -106,9 +96,9 @@ int main(int argc, char *argv[])
             tri.render(frame, depth_buffer, cam, texs);
         }
         */
-        map.render(frame, depth_buffer, cam);
+        map.render(frame, cam);
 
-        screen.update(frame.data());
+        screen.update(frame.pixels.data());
     }
 
     return 0;
