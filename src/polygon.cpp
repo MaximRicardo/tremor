@@ -126,10 +126,10 @@ std::vector<Triangle> Polygon::get_triangles() const
 {
     std::vector<Triangle> tris;
 
-    for (size_t i = 1; i < this->vs.size(); i += 2) {
-        size_t next = (i + 1) % this->vs.size();
+    size_t anchor = 0;
+    for (size_t i = 1; i < this->vs.size() - 1; ++i) {
         tris.emplace_back(
-            std::array{this->vs[i], this->vs[next], this->vs[i - 1]},
+            std::array{this->vs[anchor], this->vs[i], this->vs[i + 1]},
             std::array{Vec2(0.f, 0.f), Vec2(1.f, 0.f), Vec2(1.f, 1.f)}, 0);
     }
 
