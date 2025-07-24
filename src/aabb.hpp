@@ -22,4 +22,5 @@ public:
     bool intersects(const Plane &plane) const;
     std::vector<Vec3> intersection_points(const Plane &plane) const;
     std::array<Vec3, 8> get_vertices() const;
+    void merge(const AABB &other);
 };

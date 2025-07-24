@@ -3,6 +3,7 @@
 #include "constants.hpp"
 #include "map.hpp"
 #include "mat4x4.hpp"
+#include "shape.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -267,31 +268,32 @@ void BSP::init_leaf_node()
     this->leaf_info().empty = this->parent->behind.get() != this;
 }
 
-void BSP::create_leaf_nodes(const AABB &cur_box)
+void BSP::create_leaf_nodes(const ConvexShape &cur_hull)
 {
-    this->b_box = cur_box;
+    this->b_box = cur_hull.get_aabb();
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node();
     } else {
         this->alloc_leaf_nodes();
 
-        AABB behind_box = cur_box;
-        behind_box.clip(this->innode_info().plane.flipped());
-        AABB in_front_box = cur_box;
-        in_front_box.clip(this->innode_info().plane);
-        this->behind->create_leaf_nodes(behind_box);
-        this->in_front->create_leaf_nodes(in_front_box);
+        auto behind_hull = cur_hull;
+        behind_hull.clip(this->innode_info().plane.flipped());
+        auto in_front_hull = cur_hull;
+        in_front_hull.clip(this->innode_info().plane);
+        this->behind->create_leaf_nodes(behind_hull);
+        this->in_front->create_leaf_nodes(in_front_hull);
     }
 }
 
 void BSP::create_leaf_nodes()
 {
-    this->create_leaf_nodes(AABB(
-        Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
-             Consts::map_bounding_box_min_z),
-        Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
-             Consts::map_bounding_box_max_z)));
+    auto world_hull = ConvexShape::box(
+        Vec3(Consts::map_bounding_box_max_x - Consts::map_bounding_box_min_x,
+             Consts::map_bounding_box_max_y - Consts::map_bounding_box_min_y,
+             Consts::map_bounding_box_max_z - Consts::map_bounding_box_min_z));
+
+    this->create_leaf_nodes(world_hull);
 }
 
 const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const

@@ -3,6 +3,7 @@
 #include "plane.hpp"
 #include "polygon.hpp"
 #include <array>
+#include <cassert>
 #include <vector>
 
 namespace {
@@ -117,4 +118,17 @@ std::vector<Triangle> ConvexShape::get_triangles() const
     }
 
     return tris;
+}
+
+AABB ConvexShape::get_aabb() const
+{
+    assert(!this->polys.empty());
+
+    AABB box = this->polys.front().get_aabb();
+
+    for (const auto &poly : this->polys) {
+        box.merge(poly.get_aabb());
+    }
+
+    return box;
 }

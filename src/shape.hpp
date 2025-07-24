@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aabb.hpp"
 #include "polygon.hpp"
 #include "triangle.hpp"
 #include <vector>
@@ -20,4 +21,5 @@ public:
     void clip(const Plane &plane);
     std::vector<Vec3> get_intersections(const Plane &plane) const;
     std::vector<Triangle> get_triangles() const;
+    AABB get_aabb() const;
 };

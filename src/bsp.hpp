@@ -1,8 +1,8 @@
 #pragma once
 
-#include "aabb.hpp"
 #include "frame.hpp"
 #include "plane.hpp"
+#include "shape.hpp"
 #include "triangle.hpp"
 #include <cstdint>
 #include <memory>
@@ -49,7 +49,7 @@ class BSP {
 
     void alloc_leaf_nodes();
     void init_leaf_node();
-    void create_leaf_nodes(const AABB &cur_box);
+    void create_leaf_nodes(const ConvexShape &cur_hull);
     void create_leaf_nodes();
 
     // doesn't physically put triangles into the tree, instead uses the provided

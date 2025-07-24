@@ -135,3 +135,23 @@ std::vector<Triangle> Polygon::get_triangles() const
 
     return tris;
 }
+
+AABB Polygon::get_aabb() const
+{
+    assert(!this->vs.empty());
+
+    Vec3 min = this->vs[0];
+    Vec3 max = this->vs[0];
+
+    for (const auto &v : this->vs) {
+        min.x = std::min(min.x, v.x);
+        min.y = std::min(min.y, v.y);
+        min.z = std::min(min.z, v.z);
+
+        max.x = std::min(max.x, v.x);
+        max.y = std::min(max.y, v.y);
+        max.z = std::min(max.z, v.z);
+    }
+
+    return AABB(min, max);
+}

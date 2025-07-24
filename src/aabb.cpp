@@ -139,3 +139,14 @@ std::vector<Vec3> AABB::intersection_points(const Plane &plane) const
 
     return intersections;
 }
+
+void AABB::merge(const AABB &other)
+{
+    this->min.x = std::min(this->min.x, other.min.x);
+    this->min.y = std::min(this->min.y, other.min.y);
+    this->min.z = std::min(this->min.z, other.min.z);
+
+    this->max.x = std::max(this->max.x, other.max.x);
+    this->max.y = std::max(this->max.y, other.max.y);
+    this->max.z = std::max(this->max.z, other.max.z);
+}
