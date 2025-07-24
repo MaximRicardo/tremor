@@ -5,6 +5,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <cstdlib>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -61,6 +62,7 @@ int32_t WAD::WAD2MipHeader::mipmap_lvl_pos(unsigned lvl) const
 
     default:
         assert(false);
+        exit(-1);
     };
 }
 
