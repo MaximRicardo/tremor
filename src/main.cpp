@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
         frame.clear();
 
         std::cout << "delta_time = " << delta_time << '\n';
+        std::cout << "fps = " << 1.f / delta_time << '\n';
         bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
         std::cout << "cam in solid = " << cam_in_solid << '\n';
 

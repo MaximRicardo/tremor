@@ -2,6 +2,7 @@
 #include "camera.hpp"
 #include "frame.hpp"
 #include "index.hpp"
+#include "line.hpp"
 #include "palette.hpp"
 #include "resolution.hpp"
 #include "texture.hpp"
@@ -66,14 +67,13 @@ std::array<Vec2i, 3> norm_scr_vs_to_scr(const std::array<Vec2, 3> &vs)
     return result;
 }
 
-struct TriangleEdgeList {
+struct TriangleLines {
 
     // a list of lines from one edge of the triangle to another.
     // each element in starts and ends represents one scanline of the triangle,
     // starting from the top and ending at the bottom.
-    std::unique_ptr<int32_t[]> starts;
-    std::unique_ptr<int32_t[]> ends;
-    size_t n_edges;
+    std::array<Line1Di, Res::max_height> lines;
+    size_t n_lines;
     // how much to add to the index of a scanline to get its y coordinate in
     // screen-space.
     int32_t y_offset;
@@ -81,7 +81,7 @@ struct TriangleEdgeList {
 
 // bresenham line algorithm from https://gist.github.com/bert/1085538
 void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
-                                struct TriangleEdgeList &edges)
+                                struct TriangleLines &lines)
 {
     int32_t dx = abs(end.x - start.x), sx = start.x < end.x ? 1 : -1;
     int32_t dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
@@ -89,13 +89,13 @@ void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
 
     for (;;) { /* loop */
 
-        size_t idx = start.y - edges.y_offset;
+        size_t idx = start.y - lines.y_offset;
 
-        if (idx < edges.n_edges) {
-            if (start.x < edges.starts[idx])
-                edges.starts[idx] = start.x;
-            if (start.x > edges.ends[idx])
-                edges.ends[idx] = start.x;
+        if (idx < lines.n_lines) {
+            if (start.x < lines.lines[idx].min_x)
+                lines.lines[idx].min_x = start.x;
+            if (start.x > lines.lines[idx].max_x)
+                lines.lines[idx].max_x = start.x;
         }
 
         if (start.x == end.x && start.y == end.y)
@@ -112,36 +112,35 @@ void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
     }
 }
 
-TriangleEdgeList get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
+TriangleLines get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
 {
-    TriangleEdgeList edges;
+    TriangleLines lines;
 
     auto y_min = std::min({vs[0].y, vs[1].y, vs[2].y});
     auto y_max = std::max({vs[0].y, vs[1].y, vs[2].y});
 
     // skip any edges outside the screen
     if (y_max < 0 || y_min >= Res::height) {
-        edges.n_edges = 0;
-        return edges;
+        lines.n_lines = 0;
+        return lines;
     }
     y_min = std::max(y_min, 0);
     y_max = std::min(y_max, Res::height - 1);
 
-    edges.y_offset = y_min;
-    edges.n_edges = y_max - y_min + 1;
-    edges.starts = std::make_unique<int32_t[]>(edges.n_edges);
-    edges.ends = std::make_unique<int32_t[]>(edges.n_edges);
+    lines.y_offset = y_min;
+    lines.n_lines = y_max - y_min + 1;
+    assert(lines.n_lines <= Res::max_height);
 
-    for (size_t i = 0; i < edges.n_edges; ++i) {
-        edges.starts[i] = std::numeric_limits<int32_t>::max();
-        edges.ends[i] = std::numeric_limits<int32_t>::lowest();
+    for (size_t i = 0; i < lines.n_lines; ++i) {
+        lines.lines[i].min_x = std::numeric_limits<int32_t>::max();
+        lines.lines[i].max_x = std::numeric_limits<int32_t>::lowest();
     }
 
-    set_tri_edge_list_via_line(vs[0], vs[1], edges);
-    set_tri_edge_list_via_line(vs[1], vs[2], edges);
-    set_tri_edge_list_via_line(vs[2], vs[0], edges);
+    set_tri_edge_list_via_line(vs[0], vs[1], lines);
+    set_tri_edge_list_via_line(vs[1], vs[2], lines);
+    set_tri_edge_list_via_line(vs[2], vs[0], lines);
 
-    return edges;
+    return lines;
 }
 
 // (u, v, w) are mapped to x, y, z
@@ -340,12 +339,12 @@ void SubTriangle::project_to_scr(const Camera &cam)
 
 void SubTriangle::render(Frame &frame, std::span<const Texture> texs)
 {
-    TriangleEdgeList edges = get_triangle_edge_list(this->screen_vs);
+    TriangleLines lines = get_triangle_edge_list(this->screen_vs);
 
-    for (size_t i = 0; i < edges.n_edges; i++) {
-        int32_t y = i + edges.y_offset;
-        render_horizontal_line(y, edges.starts[i], edges.ends[i] - 1, frame,
-                               *this, texs);
+    for (size_t i = 0; i < lines.n_lines; i++) {
+        int32_t y = i + lines.y_offset;
+        render_horizontal_line(y, lines.lines[i].min_x,
+                               lines.lines[i].max_x - 1, frame, *this, texs);
     }
 }
 

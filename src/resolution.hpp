@@ -7,6 +7,8 @@ namespace Res {
 
 inline int32_t width = 320;
 inline int32_t height = 200;
+// height can never go above this value or weird shit will happen
+constexpr int32_t max_height = 1080;
 
 size_t n_pixels();
 float aspect_ratio();
