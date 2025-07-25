@@ -1,6 +1,5 @@
 #pragma once
 
-#include "color.hpp"
 #include "frame.hpp"
 #include "mat4x4.hpp"
 #include "sub_triangle.hpp"
@@ -16,8 +15,7 @@ class Triangle {
 
 public:
     struct ProjectRet {
-        std::array<SubTriangle, 2> sub_tris = {SubTriangle({}, {}),
-                                               SubTriangle({}, {})};
+        std::array<SubTriangle, 2> sub_tris = {SubTriangle(), SubTriangle()};
         unsigned n_sub_tris;
     };
 

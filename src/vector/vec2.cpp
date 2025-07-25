@@ -10,6 +10,11 @@ Vec2::Vec2(const Vec2i &v) : x(v.x), y(v.y) {}
 
 Vec2::Vec2(const Vec3 &v) : x(v.x), y(v.y) {};
 
+Vec2 Vec2::zero()
+{
+    return {0.f, 0.f};
+}
+
 Vec2 Vec2::operator+(const Vec2 &v) const
 {
     return {this->x + v.x, this->y + v.y};
@@ -74,6 +79,11 @@ float Vec2::dist(const Vec2 &v) const
 Vec2i::Vec2i() {}
 Vec2i::Vec2i(int x, int y) : x(x), y(y) {}
 Vec2i::Vec2i(const Vec2 &v) : x(v.x), y(v.y) {}
+
+Vec2i Vec2i::zero()
+{
+    return {0, 0};
+}
 
 Vec2i Vec2i::operator+(const Vec2i &v) const
 {

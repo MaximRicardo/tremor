@@ -321,10 +321,15 @@ void render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
 
 } // namespace
 
-SubTriangle::SubTriangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
-                         const Triangle *parent)
-    : vs(vs), vts(vts), parent(parent)
-{}
+SubTriangle::SubTriangle(std::span<const Vec3, 3> vs,
+                         std::span<const Vec2, 3> vts, const Triangle *parent)
+    : parent(parent)
+{
+    for (int i = 0; i < 3; ++i) {
+        this->vs[i] = vs[i];
+        this->vts[i] = vts[i];
+    }
+}
 
 std::array<Vec2i, 3> SubTriangle::get_screen_vs() const
 {

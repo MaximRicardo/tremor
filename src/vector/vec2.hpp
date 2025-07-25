@@ -15,6 +15,8 @@ public:
     Vec2(const Vec2i &v);
     Vec2(const Vec3 &v);
 
+    static Vec2 zero();
+
     Vec2 operator+(const Vec2 &v) const;
     Vec2 operator+=(const Vec2 &v);
     Vec2 operator-(const Vec2 &v) const;
@@ -39,6 +41,8 @@ public:
     Vec2i();
     Vec2i(int x, int y);
     Vec2i(const Vec2 &v);
+
+    static Vec2i zero();
 
     Vec2i operator+(const Vec2i &v) const;
     Vec2i operator+=(const Vec2i &v);

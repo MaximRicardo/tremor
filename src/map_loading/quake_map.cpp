@@ -74,7 +74,8 @@ public:
 
     Brush(std::ifstream &file, QuakeMapLoader::Format format);
 
-    std::vector<Triangle> get_tris(std::span<const Texture> textures) const;
+    std::vector<RenderPolygon>
+    get_polys(std::span<const Texture> textures) const;
 };
 
 // represents a key value pair in an entity
@@ -330,9 +331,10 @@ ConvexShape Brush::get_shape() const
     return shape;
 }
 
-std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
+std::vector<RenderPolygon>
+Brush::get_polys(std::span<const Texture> textures) const
 {
-    std::vector<Triangle> tris;
+    std::vector<RenderPolygon> rpolys;
 
     auto shape = this->get_shape();
 
@@ -344,18 +346,15 @@ std::vector<Triangle> Brush::get_tris(std::span<const Texture> textures) const
             throw std::runtime_error("error: texture " + plane.texture +
                                      " doesn't exist.");
 
-        auto poly_tris = poly.get_triangles();
-        for (auto &tri : poly_tris) {
-            for (size_t i = 0; i < tri.vs.size(); ++i) {
-                tri.vts[i] = plane.get_point_tex_coord(tri.vs[i]);
-            }
-            tri.tex_idx = tex_idx;
-        }
+        std::vector<Vec2> new_vts(poly.vs.size());
+        std::transform(
+            poly.vs.begin(), poly.vs.end(), new_vts.begin(),
+            [plane](const Vec3 &v) { return plane.get_point_tex_coord(v); });
 
-        tris.insert(tris.end(), poly_tris.begin(), poly_tris.end());
+        rpolys.emplace_back(poly.vs, new_vts, tex_idx);
     }
 
-    return tris;
+    return rpolys;
 }
 
 QuakeMapLoader::Format map_version_to_format(std::string_view version)
@@ -462,14 +461,14 @@ size_t Entity::get_info_idx(std::string_view key) const
 
 MapEntity Entity::to_map_entity(std::span<const Texture> textures) const
 {
-    std::vector<Triangle> tris;
+    std::vector<RenderPolygon> polys;
 
     for (const auto &brush : this->brushes) {
-        auto brush_tris = brush.get_tris(textures);
-        tris.insert(tris.end(), brush_tris.begin(), brush_tris.end());
+        auto brush_polys = brush.get_polys(textures);
+        polys.insert(polys.end(), brush_polys.begin(), brush_polys.end());
     }
 
-    return MapEntity(tris, this->get_pos(), this->name);
+    return MapEntity(polys, this->get_pos(), this->name);
 }
 
 // if the entity doesn't have an origin, the pos defaults to 0
@@ -552,9 +551,11 @@ Map read_file(std::ifstream &file, const std::filesystem::path &path,
     for (const auto &entity : entities) {
         map.entities.push_back(entity.to_map_entity(map.textures));
         for (const auto &brush : entity.brushes) {
-            auto brush_tris = brush.get_tris(map.textures);
-            map.tris.insert(map.tris.end(), brush_tris.begin(),
-                            brush_tris.end());
+            auto brush_polys = brush.get_polys(map.textures);
+            for (const auto &poly : brush_polys) {
+                auto tris = poly.get_triangles();
+                map.tris.insert(map.tris.end(), tris.begin(), tris.end());
+            }
         }
     }
 

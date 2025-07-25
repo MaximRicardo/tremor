@@ -33,6 +33,8 @@ public:
     std::vector<Vec3> get_intersections(const Plane &plane) const;
     std::vector<Triangle> get_triangles() const;
     AABB get_aabb() const;
+    bool empty() const;
+    bool invalid() const; // number of vertices is less than 3
 };
 
 class RenderPolygon {
@@ -59,4 +61,9 @@ public:
     void clip(const Plane &plane);
     void render(const Matrix4x4 &transform, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
+    void apply_transform(const Matrix4x4 &mat);
+    std::vector<Triangle> get_triangles() const;
+    bool empty() const;
+    bool invalid() const; // number of vertices is less than 3
+    float get_area() const;
 };

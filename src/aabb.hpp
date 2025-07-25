@@ -27,4 +27,5 @@ public:
     std::array<Vec3, 8> get_vertices() const;
     void merge(const Vec3 &p);
     void merge(const AABB &other);
+    Vec3 get_center() const;
 };

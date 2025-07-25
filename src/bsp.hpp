@@ -2,6 +2,7 @@
 
 #include "frame.hpp"
 #include "plane.hpp"
+#include "polygon.hpp"
 #include "shape.hpp"
 #include "triangle.hpp"
 #include <cstdint>
@@ -50,15 +51,15 @@ class BSP {
 
     // doesn't physically put triangles into the tree, instead uses the provided
     // triangles' planes to create the structure of the tree
-    void insert_tris_behind(const Triangle &tri, bool leaf_insert);
-    void insert_tris_in_front(const Triangle &tri, bool leaf_insert);
-    void insert(const Triangle &tri);
-    void create_outline(std::span<const Triangle> tris);
+    void insert_poly_behind(const RenderPolygon &poly, bool leaf_insert);
+    void insert_poly_in_front(const RenderPolygon &poly, bool leaf_insert);
+    void insert(const RenderPolygon &poly);
+    void create_outline(std::span<const RenderPolygon> polys);
 
     // insertion of triangles after the structure of the tree has been finalized
     // and the final LeafInfo::edge_tris can be found
-    void leaf_insert(const Triangle &tri);
-    void fill_with_triangles(std::span<const Triangle> tris);
+    void leaf_insert(const RenderPolygon &poly);
+    void fill_with_polys(std::span<const RenderPolygon> polys);
 
     explicit BSP(BSP *parent);
     BSP(const Plane &plane, BSP *parent);
@@ -69,7 +70,7 @@ public:
     std::unique_ptr<BSP> in_front = nullptr;
     BSP *parent = nullptr;
 
-    explicit BSP(std::span<const Triangle> tris);
+    explicit BSP(std::span<const RenderPolygon> polys);
 
     void render(const MapEntity &parent_entity, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;

@@ -3,10 +3,11 @@
 #include "constants.hpp"
 #include "map.hpp"
 #include "mat4x4.hpp"
+#include "plane.hpp"
+#include "polygon.hpp"
 #include "shape.hpp"
 #include <algorithm>
 #include <cassert>
-#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -18,7 +19,8 @@ namespace {
 constexpr bool place_tris_in_solid_nodes = true;
 constexpr bool do_frustum_culling = true;
 constexpr float split_plane_epsilon = 0.0001f;
-constexpr float min_triangle_area = 0.f;
+// constexpr float split_plane_epsilon = 0.000f;
+constexpr float min_poly_area = 0.f;
 
 } // namespace
 
@@ -35,22 +37,22 @@ BSP::BSP(const Plane &plane, BSP *parent) : parent(parent)
 // with actual triangles. this is cuz we need full knowledge of the bsp tree's
 // splitting planes before we can start sending triangles to the leaf nodes,
 // splitting them with every innode's splitting plane along the way.
-BSP::BSP(std::span<const Triangle> tris)
+BSP::BSP(std::span<const RenderPolygon> polys)
 {
-    assert(tris.size() > 0);
+    assert(polys.size() > 0);
 
     std::cout << "constructing bsp\n";
 
     this->info = std::make_unique<InNodeInfo>();
-    this->innode_info().plane = tris[0].get_plane();
+    this->innode_info().plane = polys[0].get_plane();
 
-    std::vector<Triangle> other_tris;
-    other_tris.assign(tris.begin() + 1, tris.end());
-    this->create_outline(other_tris);
+    std::vector<RenderPolygon> other_polys;
+    other_polys.assign(polys.begin() + 1, polys.end());
+    this->create_outline(other_polys);
 
     std::cout << "done creating outline bsp\n";
 
-    this->fill_with_triangles(tris);
+    this->fill_with_polys(polys);
 
     std::cout << "done constructing bsp\n";
 }
@@ -87,88 +89,79 @@ BSP::LeafInfo &BSP::leaf_info()
     return const_cast<LeafInfo &>(std::as_const(*this).leaf_info());
 }
 
-void BSP::insert_tris_behind(const Triangle &tri, bool leaf_insert)
+void BSP::insert_poly_behind(const RenderPolygon &poly, bool leaf_insert)
 {
-    auto &info = this->innode_info();
+    auto behind_poly = poly;
+    behind_poly.clip(Plane(-this->innode_info().plane.normal,
+                           -this->innode_info().plane.d + split_plane_epsilon));
 
-    auto tris_behind =
-        Plane(-info.plane.normal, -info.plane.d + split_plane_epsilon)
-            .clip(tri);
-
-    if (tris_behind.n_tris == 0)
+    if (behind_poly.empty())
         return;
+    assert(!behind_poly.invalid());
 
-    size_t start_idx = 0;
-    if (tris_behind.tris[start_idx].get_area() <= min_triangle_area)
-        ++start_idx;
+    if (behind_poly.get_area() <= min_poly_area)
+        return;
 
     if (!this->behind) {
-        this->behind = std::unique_ptr<BSP>(
-            new BSP(tris_behind.tris[start_idx].get_plane(), this));
-        ++start_idx;
-    }
-
-    /*
-    std::cout << "n in behind = " << tris_behind.n_tris << "\n";
-    */
-
-    for (size_t i = start_idx; i < tris_behind.n_tris; ++i) {
+        assert(!leaf_insert);
+        this->behind =
+            std::unique_ptr<BSP>(new BSP(behind_poly.get_plane(), this));
+    } else {
         if (leaf_insert)
-            this->behind->leaf_insert(tris_behind.tris[i]);
+            this->behind->leaf_insert(poly);
         else
-            this->behind->insert(tris_behind.tris[i]);
+            this->behind->insert(poly);
     }
 }
 
-void BSP::insert_tris_in_front(const Triangle &tri, bool leaf_insert)
+void BSP::insert_poly_in_front(const RenderPolygon &poly, bool leaf_insert)
 {
-    auto tris_in_front =
+    auto in_front_poly = poly;
+    in_front_poly.clip(
         Plane(this->innode_info().plane.normal,
-              this->innode_info().plane.d + split_plane_epsilon)
-            .clip(tri);
+              this->innode_info().plane.d + split_plane_epsilon));
 
-    if (tris_in_front.n_tris == 0)
+    if (in_front_poly.empty())
         return;
+    assert(!in_front_poly.invalid());
 
-    size_t start_idx = 0;
-    if (tris_in_front.tris[start_idx].get_area() <= min_triangle_area)
-        ++start_idx;
+    if (in_front_poly.get_area() <= min_poly_area)
+        return;
 
     if (!this->in_front) {
-        this->in_front = std::unique_ptr<BSP>(
-            new BSP(tris_in_front.tris[start_idx].get_plane(), this));
-        ++start_idx;
-    }
-
-    /*
-    std::cout << "n in front = " << tris_in_front.n_tris << "\n";
-    */
-
-    for (size_t i = start_idx; i < tris_in_front.n_tris; ++i) {
+        assert(!leaf_insert);
+        this->in_front = std::unique_ptr<BSP>(new BSP(poly.get_plane(), this));
+    } else {
         if (leaf_insert)
-            this->in_front->leaf_insert(tris_in_front.tris[i]);
+            this->in_front->leaf_insert(in_front_poly);
         else
-            this->in_front->insert(tris_in_front.tris[i]);
+            this->in_front->insert(in_front_poly);
     }
 }
 
-void BSP::insert(const Triangle &tri)
+void BSP::insert(const RenderPolygon &poly)
 {
-    if (tri.get_area() <= min_triangle_area)
+    if (poly.get_area() <= min_poly_area)
         return;
 
     /*
-    std::cout << "tri vs = [(" << tri.vs[0] << "), (" << tri.vs[1] << "), ("
-              << tri.vs[2] << ")]\n";
-              */
+    std::cout << "is behind = "
+              << (this->parent ? this == this->parent->behind.get() : 0)
+              << "\n";
+    std::cout << "poly vs = [";
+    for (const auto &v : poly.vs) {
+        std::cout << "(" << v.v << "), ";
+    }
+    std::cout << "]\n";
+    */
 
-    if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
-        this->insert_tris_behind(tri, false);
-        this->insert_tris_in_front(tri, false);
+    if (!this->innode_info().plane.is_coplanar(poly.get_plane())) {
+        this->insert_poly_behind(poly, false);
+        this->insert_poly_in_front(poly, false);
     }
 }
 
-void BSP::create_outline(std::span<const Triangle> tris)
+void BSP::create_outline(std::span<const RenderPolygon> tris)
 {
     for (const auto &tri : tris) {
         this->insert(tri);
@@ -179,31 +172,34 @@ void BSP::create_outline(std::span<const Triangle> tris)
     this->create_leaf_nodes();
 }
 
-void BSP::leaf_insert(const Triangle &tri)
+void BSP::leaf_insert(const RenderPolygon &poly)
 {
-    if (tri.get_area() < min_triangle_area)
+    if (poly.get_area() <= min_poly_area)
         return;
 
     if (this->is_leaf()) {
         // don't insert triangles into solid nodes, cuz those triangles will
         // never be seen anyway
-        if (place_tris_in_solid_nodes || this->leaf_info().empty)
-            this->leaf_info().edge_tris.push_back(tri);
-    } else if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
-        this->insert_tris_behind(tri, true);
-        this->insert_tris_in_front(tri, true);
-    } else if (this->innode_info().plane.normal.dot(tri.get_plane().normal) <
+        if (place_tris_in_solid_nodes || this->leaf_info().empty) {
+            auto tris = poly.get_triangles();
+            for (const auto &tri : tris)
+                this->leaf_info().edge_tris.push_back(tri);
+        }
+    } else if (!this->innode_info().plane.is_coplanar(poly.get_plane())) {
+        this->insert_poly_behind(poly, true);
+        this->insert_poly_in_front(poly, true);
+    } else if (this->innode_info().plane.normal.dot(poly.get_plane().normal) <
                0.f) {
-        this->behind->leaf_insert(tri);
+        this->behind->leaf_insert(poly);
     } else {
-        this->in_front->leaf_insert(tri);
+        this->in_front->leaf_insert(poly);
     }
 }
 
-void BSP::fill_with_triangles(std::span<const Triangle> tris)
+void BSP::fill_with_polys(std::span<const RenderPolygon> polys)
 {
-    for (const auto &tri : tris) {
-        this->leaf_insert(tri);
+    for (const auto &poly : polys) {
+        this->leaf_insert(poly);
     }
 }
 
@@ -291,9 +287,27 @@ void BSP::init_leaf_node()
 
 void BSP::create_leaf_nodes(const ConvexShape &cur_hull)
 {
-    this->b_box = cur_hull.get_aabb();
-    this->b_box.min -= Vec3(16.f, 16.f, 16.f);
-    this->b_box.max += Vec3(16.f, 16.f, 16.f);
+    /*
+    if (this->parent) {
+        std::cout << "is behind = " << (this == this->parent->behind.get())
+                  << "\n";
+        std::cout << "par plane normal = ("
+                  << this->parent->innode_info().plane.normal
+                  << "), d = " << this->parent->innode_info().plane.d << "\n";
+        std::cout << "par box min = (" << this->parent->b_box.min
+                  << "), max = (" << this->parent->b_box.max << ")\n";
+    }
+    std::cout << "n polys = " << cur_hull.polys.size() << "\n";
+    */
+
+    if (!cur_hull.polys.empty()) {
+        this->b_box = cur_hull.get_aabb();
+        this->b_box.min -= Vec3(16.f, 16.f, 16.f);
+        this->b_box.max += Vec3(16.f, 16.f, 16.f);
+    } else {
+        // temporary fix
+        this->b_box = AABB::map_box();
+    }
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node();
@@ -301,9 +315,11 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull)
         this->alloc_leaf_nodes();
 
         auto behind_hull = cur_hull;
-        behind_hull.clip(this->innode_info().plane.flipped());
         auto in_front_hull = cur_hull;
-        in_front_hull.clip(this->innode_info().plane);
+        if (!cur_hull.polys.empty()) { // temporary fix
+            behind_hull.clip(this->innode_info().plane.flipped());
+            in_front_hull.clip(this->innode_info().plane);
+        }
         this->behind->create_leaf_nodes(behind_hull);
         this->in_front->create_leaf_nodes(in_front_hull);
     }

@@ -1,15 +1,11 @@
 #include "bsp.hpp"
 #include "camera.hpp"
-#include "constants.hpp"
 #include "frame.hpp"
 #include "input/input.hpp"
 #include "map_loading/quake_map.hpp"
-#include "mat4x4.hpp"
-#include "polygon.hpp"
 #include "resolution.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
-#include <array>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -47,7 +43,7 @@ int main(int argc, char *argv[])
     Screen screen("Tremor");
 
     Map map;
-    std::filesystem::path map_path = "../maps/quake_test.map";
+    std::filesystem::path map_path = "../maps/map.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);
@@ -68,7 +64,6 @@ int main(int argc, char *argv[])
 
     Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES), 100.f);
-    cam.pos = Vec3(100.f, 100.f, 100.f);
 
     Frame frame;
     uint32_t prev_time = Time::get_ticks_ms();
@@ -99,7 +94,6 @@ int main(int argc, char *argv[])
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
 
-        /*
         if (render_bsp_tree) {
             map.render(frame, cam);
         } else {
@@ -109,31 +103,6 @@ int main(int argc, char *argv[])
                 tri.render(Matrix4x4::identity(), frame, cam, map.textures);
             }
         }
-        */
-
-        Matrix4x4 transf = Matrix4x4::translate(Vec3(100.f, 100.f, 100.f));
-        Matrix4x4 inv_transf =
-            Matrix4x4::translate(Vec3(-100.f, -100.f, -100.f));
-        Vec3 rel_cam_pos = inv_transf * Vec4(cam.pos, 1.f);
-
-        /*
-        RenderPolygon poly(
-            std::array{Vec3(-16.f, -16.f, 32.f), Vec3(16.f, -16.f, 32.f),
-                       Vec3(16.f, 16.f, 32.f), Vec3(-16.f, 16.f, 32.f)},
-            std::array{Vec2(0.f, 0.f), Vec2(1.f, 0.f), Vec2(1.f, 1.f),
-                       Vec2(0.f, 1.f)},
-            0);
-            */
-        RenderPolygon poly(
-            std::array{Vec3(-16.f, -16.f, 32.f), Vec3(16.f, -16.f, 32.f),
-                       Vec3(16.f, 16.f, 32.f)},
-            std::array{Vec2(0.f, 0.f), Vec2(1.f, 0.f), Vec2(1.f, 1.f)}, 0);
-        auto clipped = poly;
-        clipped.clip(
-            Plane(cam.look_forward_vec(),
-                  rel_cam_pos + cam.look_forward_vec() * Consts::z_near));
-        if (!clipped.vs.empty())
-            clipped.render(transf, frame, cam, map.textures);
 
         screen.update(frame.pixels.data());
     }

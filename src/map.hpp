@@ -4,6 +4,7 @@
 #include "camera.hpp"
 #include "frame.hpp"
 #include "mat4x4.hpp"
+#include "polygon.hpp"
 #include "texture.hpp"
 #include "triangle.hpp"
 #include "vector/vec3.hpp"
@@ -20,7 +21,8 @@ public:
     Vec3 pos;
     std::string name;
 
-    MapEntity(std::span<const Triangle> tris, Vec3 pos, std::string_view name);
+    MapEntity(std::span<const RenderPolygon> polys, Vec3 pos,
+              std::string_view name);
 
     bool is_point_entity() const;
     Matrix4x4 get_transform() const;

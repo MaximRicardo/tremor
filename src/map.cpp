@@ -1,11 +1,12 @@
 #include "map.hpp"
+#include "polygon.hpp"
 #include <string>
 #include <string_view>
 #include <utility>
 
-MapEntity::MapEntity(std::span<const Triangle> tris, Vec3 pos,
+MapEntity::MapEntity(std::span<const RenderPolygon> polys, Vec3 pos,
                      std::string_view name)
-    : bsp(tris.empty() ? nullptr : new BSP(tris)), pos(pos),
+    : bsp(polys.empty() ? nullptr : new BSP(polys)), pos(pos),
       name(std::string(name))
 {}
 

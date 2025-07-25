@@ -140,3 +140,8 @@ void AABB::merge(const AABB &other)
     this->merge(other.min);
     this->merge(other.max);
 }
+
+Vec3 AABB::get_center() const
+{
+    return this->min.mix(this->max, 0.5f);
+}
