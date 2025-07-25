@@ -14,6 +14,8 @@
 
 namespace {
 
+constexpr bool render_bsp_tree = true;
+
 void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
                    uint32_t upscaled_height, Screen &screen, Frame &frame)
 {
@@ -90,14 +92,15 @@ int main(int argc, char *argv[])
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
 
-        /*
-        for (auto &tri : map.tris) {
-            if (tri.get_plane().is_point_behind(cam.pos))
-                continue;
-            tri.render(Matrix4x4::identity(), frame, cam, map.textures);
+        if (render_bsp_tree) {
+            map.render(frame, cam);
+        } else {
+            for (auto &tri : map.tris) {
+                if (tri.get_plane().is_point_behind(cam.pos))
+                    continue;
+                tri.render(Matrix4x4::identity(), frame, cam, map.textures);
+            }
         }
-        */
-        map.render(frame, cam);
 
         screen.update(frame.pixels.data());
     }

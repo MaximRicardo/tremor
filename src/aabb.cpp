@@ -1,31 +1,21 @@
 #include "aabb.hpp"
 #include "constants.hpp"
+#include "line.hpp"
+#include "vector/vec3.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
 
-namespace {
-
-class Line1D {
-
-public:
-    float min_x, max_x;
-
-    Line1D(float min_x, float max_x) : min_x(min_x), max_x(max_x) {}
-
-    bool partially_contains(const Line1D &other) const;
-};
-
-bool Line1D::partially_contains(const Line1D &other) const
-{
-    return this->max_x >= other.min_x - Consts::epsilon &&
-           other.max_x >= this->min_x - Consts::epsilon;
-}
-
-} // namespace
-
-AABB::AABB() {};
 AABB::AABB(Vec3 min, Vec3 max) : min(min), max(max) {}
+
+AABB AABB::map_box()
+{
+    return AABB(
+        Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
+             Consts::map_bounding_box_min_z),
+        Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
+             Consts::map_bounding_box_max_z));
+}
 
 bool AABB::contains(const Vec3 &p) const
 {
@@ -105,13 +95,7 @@ void AABB::clip(const Plane &plane)
     Vec3 new_min = Vec3(100000.f, 100000.f, 100000.f);
     Vec3 new_max = Vec3(-100000.f, -100000.f, -100000.f);
     for (const auto &p : clipped_vs) {
-        new_min.x = std::min(new_min.x, p.x);
-        new_min.y = std::min(new_min.y, p.y);
-        new_min.z = std::min(new_min.z, p.z);
-
-        new_max.x = std::max(new_max.x, p.x);
-        new_max.y = std::max(new_max.y, p.y);
-        new_max.z = std::max(new_max.z, p.z);
+        this->merge(p);
     }
 
     this->min = new_min;
@@ -140,13 +124,19 @@ std::vector<Vec3> AABB::intersection_points(const Plane &plane) const
     return intersections;
 }
 
+void AABB::merge(const Vec3 &p)
+{
+    this->min.x = std::min(this->min.x, p.x);
+    this->min.y = std::min(this->min.y, p.y);
+    this->min.z = std::min(this->min.z, p.z);
+
+    this->max.x = std::max(this->max.x, p.x);
+    this->max.y = std::max(this->max.y, p.y);
+    this->max.z = std::max(this->max.z, p.z);
+}
+
 void AABB::merge(const AABB &other)
 {
-    this->min.x = std::min(this->min.x, other.min.x);
-    this->min.y = std::min(this->min.y, other.min.y);
-    this->min.z = std::min(this->min.z, other.min.z);
-
-    this->max.x = std::max(this->max.x, other.max.x);
-    this->max.y = std::max(this->max.y, other.max.y);
-    this->max.z = std::max(this->max.z, other.max.z);
+    this->merge(other.min);
+    this->merge(other.max);
 }

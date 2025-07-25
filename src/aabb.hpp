@@ -12,8 +12,11 @@ class AABB {
 public:
     Vec3 min, max;
 
-    AABB();
+    AABB() = default;
     AABB(Vec3 min, Vec3 max);
+
+    // creates an AABB spanning the maximum allowed map size
+    static AABB map_box();
 
     bool contains(const Vec3 &p) const;
     bool contains(const AABB &box) const;
@@ -22,5 +25,6 @@ public:
     bool intersects(const Plane &plane) const;
     std::vector<Vec3> intersection_points(const Plane &plane) const;
     std::array<Vec3, 8> get_vertices() const;
+    void merge(const Vec3 &p);
     void merge(const AABB &other);
 };

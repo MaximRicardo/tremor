@@ -19,6 +19,9 @@
 
 namespace {
 
+// this will make entities render over each other in wonky ways.
+constexpr bool ignore_depth_buffer = false;
+
 Vec2 camera_v_to_norm_scr(const Vec3 &v, const Camera &cam)
 {
     float x_fov_mult = 1.f / std::tan(cam.hfov.get() / 2.f);
@@ -302,10 +305,8 @@ void render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
-#ifndef m_DO_NOT_CHECK_DEPTH_BUFFER
-        if (frame.depths[idx] < z)
+        if (!ignore_depth_buffer && frame.depths[idx] < z)
             continue;
-#endif
         frame.depths[idx] = z;
 
         auto &tex = texs[tri.parent->tex_idx];

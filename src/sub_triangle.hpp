@@ -8,10 +8,6 @@
 #include <array>
 #include <span>
 
-// enable to ignore depth buffer checks. this will make entities render over
-// each other in wonky ways.
-// #define m_DO_NOT_CHECK_DEPTH_BUFFER
-
 class Triangle;
 class Camera;
 

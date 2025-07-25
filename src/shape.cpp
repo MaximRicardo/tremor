@@ -2,6 +2,7 @@
 #include "constants.hpp"
 #include "plane.hpp"
 #include "polygon.hpp"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <vector>
@@ -115,10 +116,13 @@ AABB ConvexShape::get_aabb() const
 {
     assert(!this->polys.empty());
 
-    AABB box = this->polys.front().get_aabb();
+    AABB box = AABB::map_box();
+    std::swap(box.max, box.min);
 
     for (const auto &poly : this->polys) {
-        box.merge(poly.get_aabb());
+        for (const auto &v : poly.vs) {
+            box.merge(v);
+        }
     }
 
     return box;

@@ -15,11 +15,10 @@
 
 namespace {
 
-// if shit breaks in weird ways u might wanna try setting this to true to see
-// if there's something wrong with the way the tree detects solid nodes.
-constexpr bool place_tris_in_solid_nodes = false;
-
+constexpr bool place_tris_in_solid_nodes = true;
+constexpr bool do_frustum_culling = true;
 constexpr float split_plane_epsilon = 0.0001f;
+constexpr float min_triangle_area = 0.f;
 
 } // namespace
 
@@ -100,11 +99,18 @@ void BSP::insert_tris_behind(const Triangle &tri, bool leaf_insert)
         return;
 
     size_t start_idx = 0;
+    if (tris_behind.tris[start_idx].get_area() <= min_triangle_area)
+        ++start_idx;
+
     if (!this->behind) {
         this->behind = std::unique_ptr<BSP>(
-            new BSP(tris_behind.tris[0].get_plane(), this));
-        start_idx = 1;
+            new BSP(tris_behind.tris[start_idx].get_plane(), this));
+        ++start_idx;
     }
+
+    /*
+    std::cout << "n in behind = " << tris_behind.n_tris << "\n";
+    */
 
     for (size_t i = start_idx; i < tris_behind.n_tris; ++i) {
         if (leaf_insert)
@@ -125,11 +131,18 @@ void BSP::insert_tris_in_front(const Triangle &tri, bool leaf_insert)
         return;
 
     size_t start_idx = 0;
+    if (tris_in_front.tris[start_idx].get_area() <= min_triangle_area)
+        ++start_idx;
+
     if (!this->in_front) {
         this->in_front = std::unique_ptr<BSP>(
-            new BSP(tris_in_front.tris[0].get_plane(), this));
-        start_idx = 1;
+            new BSP(tris_in_front.tris[start_idx].get_plane(), this));
+        ++start_idx;
     }
+
+    /*
+    std::cout << "n in front = " << tris_in_front.n_tris << "\n";
+    */
 
     for (size_t i = start_idx; i < tris_in_front.n_tris; ++i) {
         if (leaf_insert)
@@ -141,8 +154,13 @@ void BSP::insert_tris_in_front(const Triangle &tri, bool leaf_insert)
 
 void BSP::insert(const Triangle &tri)
 {
-    if (tri.get_area() < Consts::epsilon)
+    if (tri.get_area() <= min_triangle_area)
         return;
+
+    /*
+    std::cout << "tri vs = [(" << tri.vs[0] << "), (" << tri.vs[1] << "), ("
+              << tri.vs[2] << ")]\n";
+              */
 
     if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri, false);
@@ -163,7 +181,7 @@ void BSP::create_outline(std::span<const Triangle> tris)
 
 void BSP::leaf_insert(const Triangle &tri)
 {
-    if (tri.get_area() < Consts::epsilon)
+    if (tri.get_area() < min_triangle_area)
         return;
 
     if (this->is_leaf()) {
@@ -175,7 +193,7 @@ void BSP::leaf_insert(const Triangle &tri)
         this->insert_tris_behind(tri, true);
         this->insert_tris_in_front(tri, true);
     } else if (this->innode_info().plane.normal.dot(tri.get_plane().normal) <
-               -Consts::epsilon) {
+               0.f) {
         this->behind->leaf_insert(tri);
     } else {
         this->in_front->leaf_insert(tri);
@@ -204,7 +222,8 @@ void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
         return;
     }
 
-    if (!rel_cam.get_frustum().maybe_partially_contains(this->b_box)) {
+    if (do_frustum_culling &&
+        !rel_cam.get_frustum().maybe_partially_contains(this->b_box)) {
         return;
     }
 
@@ -273,6 +292,8 @@ void BSP::init_leaf_node()
 void BSP::create_leaf_nodes(const ConvexShape &cur_hull)
 {
     this->b_box = cur_hull.get_aabb();
+    this->b_box.min -= Vec3(16.f, 16.f, 16.f);
+    this->b_box.max += Vec3(16.f, 16.f, 16.f);
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node();
@@ -326,9 +347,9 @@ bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
     std::cout << "point = (" << point << ")\n";
     std::cout << "min = (" << p_node.b_box.min << ")\n";
     std::cout << "max = (" << p_node.b_box.max << ")\n";
-    std::cout << "point inside = "
-              << p_node.b_box.contains(parent.get_inv_transform() *
-                                       Vec4(point, 1.f))
-              << "\n";
+    bool inside =
+        p_node.b_box.contains(parent.get_inv_transform() * Vec4(point, 1.f));
+    std::cout << "point inside = " << inside << "\n";
+    assert(inside);
     return !p_node.leaf_info().empty;
 }
