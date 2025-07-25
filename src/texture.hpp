@@ -27,18 +27,18 @@ public:
 
 private:
     std::vector<MipMapLevel> mipmaps;
-    uint32_t width;
-    uint32_t height;
+    int32_t width;
+    int32_t height;
 
 public:
     // always lowercase
     std::string name;
 
-    Texture(std::span<const MipMapLevel, n_mipmap_lvls> mipmaps, uint32_t width,
-            uint32_t height, std::string_view name);
+    Texture(std::span<const MipMapLevel, n_mipmap_lvls> mipmaps, int32_t width,
+            int32_t height, std::string_view name);
 
     const std::vector<uint8_t> &get_pixels(size_t mipmap_lvl) const;
-    uint32_t get_width(size_t mipmap_lvl) const;
-    uint32_t get_height(size_t mipmap_lvl) const;
+    int32_t get_width(size_t mipmap_lvl) const;
+    int32_t get_height(size_t mipmap_lvl) const;
     uint32_t n_pixels(size_t mipmap_lvl) const;
 };
