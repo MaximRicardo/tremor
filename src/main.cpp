@@ -91,10 +91,10 @@ int main(int argc, char *argv[])
                           screen, frame);
 
         /*
-        for (auto &tri : tris) {
+        for (auto &tri : map.tris) {
             if (tri.get_plane().is_point_behind(cam.pos))
                 continue;
-            tri.render(frame, depth_buffer, cam, texs);
+            tri.render(Matrix4x4::identity(), frame, cam, map.textures);
         }
         */
         map.render(frame, cam);

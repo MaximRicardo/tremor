@@ -35,6 +35,8 @@ public:
     // worldspawn is always first
     std::vector<MapEntity> entities;
     std::vector<Texture> textures;
+    // the raw triangles of the map without any BSP splitting
+    std::vector<Triangle> tris;
 
     // no constructor, MUAH HAH HAH HA
 

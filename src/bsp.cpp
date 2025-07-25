@@ -15,6 +15,10 @@
 
 namespace {
 
+// if shit breaks in weird ways u might wanna try setting this to true to see
+// if there's something wrong with the way the tree detects solid nodes.
+constexpr bool place_tris_in_solid_nodes = false;
+
 constexpr float split_plane_epsilon = 0.0001f;
 
 } // namespace
@@ -165,9 +169,7 @@ void BSP::leaf_insert(const Triangle &tri)
     if (this->is_leaf()) {
         // don't insert triangles into solid nodes, cuz those triangles will
         // never be seen anyway
-#ifndef m_PLACE_TRIS_IN_SOLID_NODES
-        if (this->leaf_info().empty)
-#endif
+        if (place_tris_in_solid_nodes || this->leaf_info().empty)
             this->leaf_info().edge_tris.push_back(tri);
     } else if (!this->innode_info().plane.is_coplanar(tri.get_plane())) {
         this->insert_tris_behind(tri, true);

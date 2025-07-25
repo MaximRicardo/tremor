@@ -551,6 +551,11 @@ Map read_file(std::ifstream &file, const std::filesystem::path &path,
 
     for (const auto &entity : entities) {
         map.entities.push_back(entity.to_map_entity(map.textures));
+        for (const auto &brush : entity.brushes) {
+            auto brush_tris = brush.get_tris(map.textures);
+            map.tris.insert(map.tris.end(), brush_tris.begin(),
+                            brush_tris.end());
+        }
     }
 
     return map;
