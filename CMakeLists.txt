@@ -16,7 +16,7 @@ add_compile_options(-Dm_RAYLIB=1)
  add_compile_options(-ftree-vectorize -msse2 -mfpmath=sse -O3 -flto)
  add_link_options(-flto)
 # even more speed
- add_compile_options(-DNDEBUG)
+# add_compile_options(-DNDEBUG)
 
 # for debugging
 # add_compile_options(-ggdb3 -fsanitize=address -fsanitize=undefined)

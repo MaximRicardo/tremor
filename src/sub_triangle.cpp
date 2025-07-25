@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
-#include <memory>
 #include <span>
 
 namespace {
@@ -296,7 +295,7 @@ void render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
 
     for (int x = x_0; x <= x_1; ++x) {
         size_t idx = Index::conv_2d_to_1d(Vec2i(x, y), Res::width);
-        assert(idx < Res::size);
+        assert(idx < Res::n_pixels());
 
         Vec3 bary_coords = get_barycentric_coords(
             Vec2(x, y), tri.get_screen_vs()[0], tri.get_screen_vs()[1],

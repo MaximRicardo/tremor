@@ -60,15 +60,6 @@ ConvexShape ConvexShape::box(Vec3 scale)
         Polygon(std::array{Vec3(s.x, s.y, -s.z), Vec3(s.x, s.y, s.z),
                            Vec3(-s.x, s.y, s.z), Vec3(-s.x, s.y, -s.z)}));
 
-    /*
-    polys[0].sort_vs_ccw(Vec3(0.f, 0.f, -1.f));
-    polys[1].sort_vs_ccw(Vec3(0.f, 0.f, 1.f));
-    polys[2].sort_vs_ccw(Vec3(-1.f, 0.f, 0.f));
-    polys[3].sort_vs_ccw(Vec3(1.f, 0.f, 0.f));
-    polys[4].sort_vs_ccw(Vec3(0.f, -1.f, 0.f));
-    polys[5].sort_vs_ccw(Vec3(0.f, 1.f, 0.f));
-    */
-
     return ConvexShape(polys);
 }
 
