@@ -8,6 +8,9 @@ namespace Res {
 inline int32_t width = 320;
 inline int32_t height = 200;
 // height can never go above this value or weird shit will happen
+// NOTE:
+//    YOU CAN CHANGE MAX_HEIGHT TO ANYTHING, SO LONG AS IT IS GREATER THAN
+//    HEIGHT
 constexpr int32_t max_height = 1080;
 
 size_t n_pixels();
