@@ -58,7 +58,10 @@ int main(int argc, char *argv[])
 
     MapEntity &worldspawn = map.entities[0];
 
-    std::cout << "map has " << map.n_triangles() << " tris\n";
+    std::cout << "map has " << map.tris.size()
+              << " triangles before BSP generation\n";
+    std::cout << "map has " << map.n_triangles()
+              << " triangles after BSP generation\n";
     std::cout << "worldspawn max depth is " << worldspawn.bsp->max_depth()
               << "\n";
 

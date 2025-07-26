@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <iostream>
 #include <limits>
 #include <span>
 
@@ -185,11 +186,6 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
                         tri.vts[2] / tri.vs[2].z * bary_coords.z) *
                        z;
 
-    if (std::isnan(p_tex_coord.x))
-        p_tex_coord.x = 0.f;
-    if (std::isnan(p_tex_coord.y))
-        p_tex_coord.y = 0.f;
-
     // textures wrap around
     p_tex_coord.x = std::fmod(std::abs(p_tex_coord.x), 1.f);
     p_tex_coord.y = std::fmod(std::abs(p_tex_coord.y), 1.f);
@@ -201,10 +197,8 @@ Vec2i get_tex_coords(const SubTriangle &tri, const Vec3 &bary_coords, float z,
     Vec2i tx = Vec2i(p_tex_coord.x * tex.get_width(mipmap_lvl),
                      p_tex_coord.y * tex.get_height(mipmap_lvl));
 
-    tx.x = std::max(
-        0, std::min(static_cast<int>(tex.get_width(mipmap_lvl) - 1), tx.x));
-    tx.y = std::max(
-        0, std::min(static_cast<int>(tex.get_height(mipmap_lvl) - 1), tx.y));
+    tx.x = std::max(0, std::min(tex.get_width(mipmap_lvl) - 1, tx.x));
+    tx.y = std::max(0, std::min(tex.get_height(mipmap_lvl) - 1, tx.y));
 
     return tx;
 }
