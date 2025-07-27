@@ -48,6 +48,17 @@ Vec2 Vec2::operator*=(float x)
     return *this;
 }
 
+Vec2 Vec2::operator*(const Vec2 &v) const
+{
+    return {this->x * v.x, this->y * v.y};
+}
+
+Vec2 Vec2::operator*=(const Vec2 &v)
+{
+    *this = *this * v;
+    return *this;
+}
+
 Vec2 Vec2::operator/(float x) const
 {
     return {this->x / x, this->y / x};
@@ -56,6 +67,17 @@ Vec2 Vec2::operator/(float x) const
 Vec2 Vec2::operator/=(float x)
 {
     *this = *this / x;
+    return *this;
+}
+
+Vec2 Vec2::operator/(const Vec2 &v) const
+{
+    return {this->x / v.x, this->y / v.y};
+}
+
+Vec2 Vec2::operator/=(const Vec2 &v)
+{
+    *this = *this / v;
     return *this;
 }
 
@@ -118,6 +140,17 @@ Vec2i Vec2i::operator*=(int x)
     return *this;
 }
 
+Vec2i Vec2i::operator*(const Vec2i &v) const
+{
+    return {this->x * v.x, this->y * v.y};
+}
+
+Vec2i Vec2i::operator*=(const Vec2i &v)
+{
+    *this = *this * v;
+    return *this;
+}
+
 Vec2i Vec2i::operator/(int x) const
 {
     return {this->x / x, this->y / y};
@@ -126,6 +159,17 @@ Vec2i Vec2i::operator/(int x) const
 Vec2i Vec2i::operator/=(int x)
 {
     *this = *this / x;
+    return *this;
+}
+
+Vec2i Vec2i::operator/(const Vec2i &v) const
+{
+    return {this->x / v.x, this->y / v.y};
+}
+
+Vec2i Vec2i::operator/=(const Vec2i &v)
+{
+    *this = *this / v;
     return *this;
 }
 
