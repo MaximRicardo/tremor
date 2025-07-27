@@ -42,4 +42,5 @@ public:
     Plane get_plane(const Matrix4x4 &transform) const;
     float get_area() const;
     bool is_degenerate() const;
+    bool intersects(const Plane &plane) const;
 };

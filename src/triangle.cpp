@@ -122,3 +122,11 @@ bool Triangle::is_degenerate() const
 {
     return this->get_area() < Consts::epsilon;
 }
+
+bool Triangle::intersects(const Plane &plane) const
+{
+    bool v0 = plane.is_point_behind(this->vs[0]);
+    bool v1 = plane.is_point_behind(this->vs[1]);
+    bool v2 = plane.is_point_behind(this->vs[2]);
+    return v0 != v1 || v0 != v2;
+}

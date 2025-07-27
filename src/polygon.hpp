@@ -66,4 +66,5 @@ public:
     bool empty() const;
     bool invalid() const; // number of vertices is less than 3
     float get_area() const;
+    bool intersects(const Plane &plane) const;
 };

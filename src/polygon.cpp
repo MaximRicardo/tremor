@@ -342,3 +342,16 @@ float RenderPolygon::get_area() const
 
     return area;
 }
+
+bool RenderPolygon::intersects(const Plane &plane) const
+{
+    assert(this->vs.size() >= 3);
+
+    bool v0_b = plane.is_point_behind(this->vs[0].v);
+    for (auto v = this->vs.begin() + 1; v < this->vs.end(); ++v) {
+        if (plane.is_point_behind(v->v) != v0_b)
+            return true;
+    }
+
+    return false;
+}

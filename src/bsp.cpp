@@ -6,14 +6,19 @@
 #include "plane.hpp"
 #include "polygon.hpp"
 #include "shape.hpp"
+#include "ssize.hpp"
 #include "triangle.hpp"
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <span>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace {
 
@@ -23,12 +28,69 @@ constexpr float min_poly_area = 0.f;
 // if false, the polygons in each leaf_info().edge_tris will be rendered instead
 // of the polygons in each innode_info().tris.
 constexpr bool render_innodes = true;
+constexpr bool optimize_tree = false;
 
 Camera get_rel_cam(const Camera &cam, const Matrix4x4 &inv_transform)
 {
     Camera rel_cam = cam;
     rel_cam.pos = inv_transform * Vec4(cam.pos, 1.f);
     return rel_cam;
+}
+
+int32_t n_polys_clipped(isize_t poly, std::span<const RenderPolygon> polys,
+                        isize_t start)
+{
+    int32_t n = 0;
+
+    auto p = polys[poly].get_plane();
+
+    for (auto other = polys.begin() + start; other < polys.end(); ++other) {
+        if (poly == std::distance(polys.begin(), other))
+            continue;
+
+        if (other->intersects(p))
+            ++n;
+    }
+
+    return n;
+}
+
+isize_t get_best_polygon(std::span<const RenderPolygon> polys, isize_t start)
+{
+    isize_t best = -1;
+    int32_t best_score = INT32_MIN;
+
+    for (auto i = polys.begin() + start; i < polys.end(); ++i) {
+        isize_t idx = std::distance(polys.begin(), i);
+
+        int32_t n_clipped = n_polys_clipped(idx, polys, start);
+
+        int32_t score = -n_clipped;
+        if (!best || score > best_score) {
+            best = idx;
+            best_score = score;
+        }
+    }
+
+    assert(best != -1);
+    return best;
+}
+
+std::vector<const RenderPolygon *>
+sort_by_score(std::span<const RenderPolygon> polys)
+{
+    std::vector<const RenderPolygon *> sorted;
+    for (const auto &poly : polys)
+        sorted.push_back(&poly);
+
+    if (optimize_tree) {
+        for (size_t i = 0; i < sorted.size(); ++i) {
+            size_t best = get_best_polygon(polys, i);
+            std::swap(sorted[i], sorted[best]);
+        }
+    }
+
+    return sorted;
 }
 
 } // namespace
@@ -44,17 +106,21 @@ BSP::BSP(const Plane &plane, std::span<const Triangle> tris, BSP *parent)
     this->innode_info().tris.assign(tris.begin(), tris.end());
 }
 
-BSP::BSP(std::span<const RenderPolygon> polys)
+BSP::BSP(std::span<const RenderPolygon> og_polys)
 {
-    assert(polys.size() > 0);
+    assert(og_polys.size() > 0);
 
     std::cout << "constructing bsp\n";
 
+    auto sorted = sort_by_score(og_polys);
+    std::cout << "done sorting\n";
+
     this->info = std::make_unique<InNodeInfo>();
-    this->innode_info().plane = polys[0].get_plane();
+    this->innode_info().plane = sorted[0]->get_plane();
 
     std::vector<RenderPolygon> other_polys;
-    other_polys.assign(polys.begin() + 1, polys.end());
+    for (const auto &poly : sorted)
+        other_polys.push_back(*poly);
     this->create_outline(other_polys);
 
     std::cout << "done creating bsp\n";

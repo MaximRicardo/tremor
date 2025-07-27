@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     Screen screen("Tremor");
 
     Map map;
-    std::filesystem::path map_path = "../maps/map.map";
+    std::filesystem::path map_path = "../maps/e1m1.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);
