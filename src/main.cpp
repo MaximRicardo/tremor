@@ -31,9 +31,7 @@ void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
 
 void print_fps(FTerm &fterm, float delta_time)
 {
-    std::ostringstream stream;
-    stream << "fps = " << 1.f / delta_time;
-    fterm.print_str(stream.str());
+    fterm.c_printf("fps = %f\n", 1.f / delta_time);
 }
 
 } // namespace
@@ -74,7 +72,7 @@ int main(int argc, char *argv[])
               << "\n";
 
     Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
-               Angle(90.f, Angle::Type::DEGREES), 100.f);
+               Angle(90.f, Angle::Type::DEGREES), 300.f);
 
     Frame frame;
     FTerm fterm(frame);

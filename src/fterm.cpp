@@ -5,7 +5,10 @@
 #include "resolution.hpp"
 #include "vector/vec2.hpp"
 #include <cassert>
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
+#include <memory>
 #include <string_view>
 
 namespace {
@@ -13,6 +16,17 @@ namespace {
 bool char_drawable(char c)
 {
     return c >= Font::bitmap_ascii_first && c <= Font::bitmap_ascii_last;
+}
+
+// DOESN'T MODIFY ARGS
+int get_printf_len(const char *fmt, va_list &args)
+{
+    va_list args_cpy;
+    va_copy(args_cpy, args);
+    int len = vsnprintf(nullptr, 0, fmt, args_cpy);
+    va_end(args_cpy);
+
+    return len;
 }
 
 } // namespace
@@ -75,11 +89,6 @@ void FTerm::print_letter(char c)
     this->inc_cursor();
 }
 
-void FTerm::move_cursor(Vec2i char_pos)
-{
-    this->cursor = char_pos;
-}
-
 void FTerm::print_char(int c)
 {
     if (c == '\0')
@@ -97,4 +106,38 @@ void FTerm::print_str(std::string_view str)
     for (auto c : str) {
         this->print_char(c);
     }
+}
+
+void FTerm::move_cursor(Vec2i char_pos)
+{
+    this->cursor = char_pos;
+}
+
+int FTerm::c_putchar(int c)
+{
+    this->print_char(c);
+    return c;
+}
+
+int FTerm::c_puts(char *str)
+{
+    this->print_str(str);
+    return 0;
+}
+
+int FTerm::c_printf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+
+    int len = get_printf_len(fmt, args);
+
+    auto str = std::make_unique<char[]>(len + 1);
+    vsprintf(str.get(), fmt, args);
+
+    this->print_str(str.get());
+
+    va_end(args);
+
+    return len;
 }

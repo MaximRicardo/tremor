@@ -21,6 +21,9 @@ class FTerm {
     void render_letter(char c);
     void print_letter(char c);
 
+    void print_char(int c);
+    void print_str(std::string_view str);
+
 public:
     Color foreground = Color(255, 255, 255);
 
@@ -28,6 +31,7 @@ public:
     FTerm(Frame &frame, const Color &foreground);
 
     void move_cursor(Vec2i char_pos);
-    void print_char(int c);
-    void print_str(std::string_view str);
+    int c_putchar(int c);
+    int c_puts(char *str);
+    int c_printf(const char *fmt, ...);
 };
