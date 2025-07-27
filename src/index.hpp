@@ -1,10 +1,11 @@
 #pragma once
 
+#include "ssize.hpp"
 #include "vector/vec2.hpp"
-#include <cstddef>
 
 namespace Index {
 
-size_t conv_2d_to_1d(Vec2i pos, size_t width);
+isize_t conv_2d_to_1d(Vec2i pos, isize_t width);
+isize_t to_1d(Vec2i pos, isize_t width);
 
-}
+} // namespace Index
