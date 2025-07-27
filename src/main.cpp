@@ -1,6 +1,7 @@
 #include "bsp.hpp"
 #include "camera.hpp"
 #include "frame.hpp"
+#include "fterm.hpp"
 #include "input/input.hpp"
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
@@ -26,6 +27,13 @@ void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
 
     frame.update_resolution();
     screen.update_resolution();
+}
+
+void print_fps(FTerm &fterm, float delta_time)
+{
+    std::ostringstream stream;
+    stream << "fps = " << 1.f / delta_time;
+    fterm.print_str(stream.str());
 }
 
 } // namespace
@@ -69,6 +77,8 @@ int main(int argc, char *argv[])
                Angle(90.f, Angle::Type::DEGREES), 100.f);
 
     Frame frame;
+    FTerm fterm(frame);
+
     uint32_t prev_time = Time::get_ticks_ms();
     while (!screen.should_close()) {
         float delta_time =
@@ -106,6 +116,9 @@ int main(int argc, char *argv[])
                 tri.render(Matrix4x4::identity(), frame, cam, map.textures);
             }
         }
+
+        fterm.move_cursor(Vec2i::zero());
+        print_fps(fterm, delta_time);
 
         screen.update(frame.pixels.data());
     }
