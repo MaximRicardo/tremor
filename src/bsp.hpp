@@ -4,6 +4,7 @@
 #include "plane.hpp"
 #include "polygon.hpp"
 #include "shape.hpp"
+#include "ssize.hpp"
 #include "triangle.hpp"
 #include <cstdint>
 #include <memory>
@@ -62,11 +63,13 @@ class BSP {
     void create_outline(std::span<const RenderPolygon> polys);
 
     void render_innode_tris(const MapEntity &parent, Frame &frame,
-                            const Camera &cam,
-                            std::span<const Texture> texs) const;
+                            const Camera &cam, std::span<const Texture> texs,
+                            isize_t &cur_sort_key);
     void render_leaf_node_tris(const MapEntity &parent, Frame &frame,
-                               const Camera &cam,
-                               std::span<const Texture> texs) const;
+                               const Camera &cam, std::span<const Texture> texs,
+                               isize_t &cur_sort_key);
+    void render(const MapEntity &parent, Frame &frame, const Camera &cam,
+                std::span<const Texture> texs, isize_t &cur_sort_key);
 
     explicit BSP(BSP *parent);
     // innode constructor
@@ -81,7 +84,7 @@ public:
     explicit BSP(std::span<const RenderPolygon> polys);
 
     void render(const MapEntity &parent, Frame &frame, const Camera &cam,
-                std::span<const Texture> texs) const;
+                std::span<const Texture> texs);
     int32_t n_nodes() const;
     int32_t n_triangles() const;
     int32_t max_depth() const;

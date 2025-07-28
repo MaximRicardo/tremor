@@ -71,8 +71,7 @@ Triangle::Triangle(std::array<Vec3, 3> vs, std::array<Vec2, 3> vts,
     : vs(vs), vts(vts), tex_idx(tex_idx)
 {}
 
-Triangle::ProjectRet Triangle::project(const Matrix4x4 &transform,
-                                       const Camera &cam) const
+void Triangle::project(const Matrix4x4 &transform, const Camera &cam) const
 {
     std::array<Vec3, 3> transf_vs;
     std::transform(
@@ -80,18 +79,17 @@ Triangle::ProjectRet Triangle::project(const Matrix4x4 &transform,
         [transform](const Vec3 &v) { return transform * Vec4(v, 1.f); });
     auto cam_vs = world_vs_to_camera(transf_vs, cam);
 
-    return split_tri_with_near_plane(*this, cam_vs, cam);
+    this->last_proj_ret = split_tri_with_near_plane(*this, cam_vs, cam);
 }
 
 void Triangle::render(const Matrix4x4 &transform, Frame &frame,
                       const Camera &cam,
                       const std::span<const Texture> texs) const
 {
-    Triangle::ProjectRet project_ret;
-    project_ret = this->project(transform, cam);
+    this->project(transform, cam);
 
-    for (unsigned i = 0; i < project_ret.n_sub_tris; i++) {
-        project_ret.sub_tris[i].render(frame, texs);
+    for (unsigned i = 0; i < this->last_proj_ret.n_sub_tris; i++) {
+        this->last_proj_ret.sub_tris[i].render(frame, texs);
     }
 }
 

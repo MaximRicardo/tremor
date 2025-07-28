@@ -5,6 +5,7 @@
 #include "input/input.hpp"
 #include "map_loading/quake_map.hpp"
 #include "resolution.hpp"
+#include "rspan.hpp"
 #include "screen/screen.hpp"
 #include "time.hpp"
 #include <cstdint>
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
     Screen screen("Tremor");
 
     Map map;
-    std::filesystem::path map_path = "../maps/e1m1.map";
+    std::filesystem::path map_path = "../maps/quake_test.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 
     Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES), 300.f);
+    cam.pos -= Vec3(0.f, 0.f, 32.f);
 
     Frame frame;
     FTerm fterm(frame);
@@ -105,6 +107,8 @@ int main(int argc, char *argv[])
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
 
+        std::cout << "rendering\n";
+
         if (render_bsp_tree) {
             map.render(frame, cam);
         } else {
@@ -115,10 +119,20 @@ int main(int argc, char *argv[])
             }
         }
 
+        std::cout << "rendering spans\n";
+
+        if (RSpan::enabled)
+            RSpan::render(frame, map.textures);
+
+        std::cout << "printing on screen\n";
+
         fterm.move_cursor(Vec2i::zero());
         print_fps(fterm, delta_time);
 
+        std::cout << "updating frame\n";
         screen.update(frame.pixels.data());
+
+        std::cout << "iteration done\n";
     }
 
     return 0;

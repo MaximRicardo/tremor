@@ -5,6 +5,7 @@
 #include "mat4x4.hpp"
 #include "plane.hpp"
 #include "polygon.hpp"
+#include "rspan.hpp"
 #include "shape.hpp"
 #include "ssize.hpp"
 #include "triangle.hpp"
@@ -229,39 +230,42 @@ void BSP::create_outline(std::span<const RenderPolygon> tris)
 }
 
 void BSP::render_innode_tris(const MapEntity &parent, Frame &frame,
-                             const Camera &cam,
-                             std::span<const Texture> texs) const
+                             const Camera &cam, std::span<const Texture> texs,
+                             isize_t &cur_sort_key)
 {
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
-    for (const auto &tri : this->innode_info().tris) {
+    for (auto &tri : this->innode_info().tris) {
         if (tri.get_plane().is_point_behind(rel_cam.pos))
             continue;
+        tri.sort_key = cur_sort_key++;
         tri.render(parent.get_transform(), frame, cam, texs);
     }
 }
 
 void BSP::render_leaf_node_tris(const MapEntity &parent, Frame &frame,
                                 const Camera &cam,
-                                std::span<const Texture> texs) const
+                                std::span<const Texture> texs,
+                                isize_t &cur_sort_key)
 {
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
-    for (const auto &tri : this->leaf_info().edge_tris) {
+    for (auto &tri : this->leaf_info().edge_tris) {
         if (tri->get_plane().is_point_behind(rel_cam.pos))
             continue;
+        tri->sort_key = cur_sort_key++;
         tri->render(parent.get_transform(), frame, cam, texs);
     }
 }
 
 void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
-                 std::span<const Texture> texs) const
+                 std::span<const Texture> texs, isize_t &cur_sort_key)
 {
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
     if (this->is_leaf()) {
         if (!render_innodes)
-            this->render_leaf_node_tris(parent, frame, cam, texs);
+            this->render_leaf_node_tris(parent, frame, cam, texs, cur_sort_key);
         return;
     }
 
@@ -272,19 +276,30 @@ void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
 
     bool cam_in_front = !this->innode_info().plane.is_point_behind(rel_cam.pos);
 
-    // everything is rendered back to front
-    auto &first = cam_in_front ? this->behind : this->in_front;
-    auto &last = cam_in_front ? this->in_front : this->behind;
+    // everything is rendered front to back
+    auto first = cam_in_front ? this->in_front.get() : this->behind.get();
+    auto last = cam_in_front ? this->behind.get() : this->in_front.get();
+
+    // unless spans are disabled, in which case they're not
+    if (!RSpan::enabled)
+        std::swap(first, last);
 
     if (first)
-        first->render(parent, frame, cam, texs);
+        first->render(parent, frame, cam, texs, cur_sort_key);
 
     if (render_innodes) {
-        this->render_innode_tris(parent, frame, cam, texs);
+        this->render_innode_tris(parent, frame, cam, texs, cur_sort_key);
     }
 
     if (last)
-        last->render(parent, frame, cam, texs);
+        last->render(parent, frame, cam, texs, cur_sort_key);
+}
+
+void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
+                 std::span<const Texture> texs)
+{
+    isize_t start_key = 0;
+    this->render(parent, frame, cam, texs, start_key);
 }
 
 int32_t BSP::n_nodes() const
