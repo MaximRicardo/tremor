@@ -394,14 +394,7 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
                             std::vector<Triangle *> tris)
 {
-    if (!cur_hull.polys.empty()) {
-        this->b_box = cur_hull.get_aabb();
-        this->b_box.min -= Vec3(16.f, 16.f, 16.f);
-        this->b_box.max += Vec3(16.f, 16.f, 16.f);
-    } else {
-        // temporary fix
-        this->b_box = AABB::map_box();
-    }
+    this->b_box = cur_hull.get_aabb();
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node(tris);
@@ -414,10 +407,8 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
 
         auto behind_hull = cur_hull;
         auto in_front_hull = cur_hull;
-        if (!cur_hull.polys.empty()) { // temporary fix
-            behind_hull.clip(this->innode_info().plane.flipped());
-            in_front_hull.clip(this->innode_info().plane);
-        }
+        behind_hull.clip(this->innode_info().plane.flipped());
+        in_front_hull.clip(this->innode_info().plane);
 
         this->behind->create_leaf_nodes(behind_hull, tris);
         this->in_front->create_leaf_nodes(in_front_hull, tris);
@@ -460,12 +451,8 @@ bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
 {
     auto &p_node = this->get_point_node(point, parent);
 
-    std::cout << "point = (" << point << ")\n";
-    std::cout << "min = (" << p_node.b_box.min << ")\n";
-    std::cout << "max = (" << p_node.b_box.max << ")\n";
     bool inside =
         p_node.b_box.contains(parent.get_inv_transform() * Vec4(point, 1.f));
-    std::cout << "point inside = " << inside << "\n";
     assert(inside);
     return !p_node.leaf_info().empty;
 }

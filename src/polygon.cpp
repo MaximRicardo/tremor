@@ -135,15 +135,19 @@ std::vector<Vec3> Polygon::get_intersections(const Plane &plane) const
     return intersections;
 }
 
-std::vector<Triangle> Polygon::get_triangles() const
+std::vector<Triangle> Polygon::get_triangles(bool cull_degenerates) const
 {
     std::vector<Triangle> tris;
 
     size_t anchor = 0;
     for (size_t i = 1; i < this->vs.size() - 1; ++i) {
-        tris.emplace_back(
+        Triangle new_tri(
             std::array{this->vs[anchor], this->vs[i], this->vs[i + 1]},
             std::array{Vec2(0.f, 0.f), Vec2(1.f, 0.f), Vec2(1.f, 1.f)}, 0);
+
+        if (cull_degenerates && new_tri.get_area() <= 0.01f)
+            continue;
+        tris.push_back(new_tri);
     }
 
     return tris;
@@ -302,7 +306,7 @@ std::vector<Vec3> RenderPolygon::get_cam_space_vs(const Matrix4x4 &transform,
     return ret;
 }
 
-std::vector<Triangle> RenderPolygon::get_triangles() const
+std::vector<Triangle> RenderPolygon::get_triangles(bool cull_degenerates) const
 {
     assert(this->vs.size() >= 3);
 
@@ -310,10 +314,14 @@ std::vector<Triangle> RenderPolygon::get_triangles() const
 
     size_t anchor = 0;
     for (size_t i = 1; i < this->vs.size() - 1; ++i) {
-        tris.emplace_back(
+        Triangle new_tri(
             std::array{this->vs[anchor].v, this->vs[i].v, this->vs[i + 1].v},
             std::array{this->vs[anchor].vt, this->vs[i].vt, this->vs[i + 1].vt},
             this->tex_idx);
+
+        if (cull_degenerates && new_tri.get_area() <= 0.01f)
+            continue;
+        tris.push_back(new_tri);
     }
 
     return tris;

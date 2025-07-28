@@ -30,11 +30,6 @@ void resize_window(uint32_t width, uint32_t height, uint32_t upscaled_width,
     screen.update_resolution();
 }
 
-void print_fps(FTerm &fterm, float delta_time)
-{
-    fterm.c_printf("fps = %f\n", 1.f / delta_time);
-}
-
 } // namespace
 
 int main(int argc, char *argv[])
@@ -50,7 +45,7 @@ int main(int argc, char *argv[])
     Screen screen("Tremor");
 
     Map map;
-    std::filesystem::path map_path = "../maps/quake_test.map";
+    std::filesystem::path map_path = "../maps/e1m1.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);
@@ -127,7 +122,10 @@ int main(int argc, char *argv[])
         std::cout << "printing on screen\n";
 
         fterm.move_cursor(Vec2i::zero());
-        print_fps(fterm, delta_time);
+        fterm.c_printf("fps = %f\n", 1.f / delta_time);
+        bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
+        worldspawn.bsp->get_point_node(cam.pos, worldspawn);
+        fterm.c_printf("cam_in_solid = %d\n", cam_in_solid);
 
         std::cout << "updating frame\n";
         screen.update(frame.pixels.data());

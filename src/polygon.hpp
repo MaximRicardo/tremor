@@ -31,7 +31,7 @@ public:
     // clips to the part that is in front of the plane
     void clip(const Plane &plane);
     std::vector<Vec3> get_intersections(const Plane &plane) const;
-    std::vector<Triangle> get_triangles() const;
+    std::vector<Triangle> get_triangles(bool cull_degenerates = true) const;
     AABB get_aabb() const;
     bool empty() const;
     bool invalid() const; // number of vertices is less than 3
@@ -62,7 +62,7 @@ public:
     void render(const Matrix4x4 &transform, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
     void apply_transform(const Matrix4x4 &mat);
-    std::vector<Triangle> get_triangles() const;
+    std::vector<Triangle> get_triangles(bool cull_degenerates = true) const;
     bool empty() const;
     bool invalid() const; // number of vertices is less than 3
     float get_area() const;
