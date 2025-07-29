@@ -14,6 +14,9 @@ public:
     BSP *in_front = nullptr;
 
     Portal(const Polygon &shape, BSP *behind, BSP *in_front);
+
+    static void merge(Portal &a, Portal &b);
+    void merge_with(const Portal &other);
 };
 
 } // namespace PVS

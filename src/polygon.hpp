@@ -78,3 +78,5 @@ public:
     float get_area() const;
     bool intersects(const Plane &plane) const;
 };
+
+std::ostream &operator<<(std::ostream &os, const Polygon &poly);

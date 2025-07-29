@@ -68,6 +68,9 @@ class BSP {
     void render_leaf_node_tris(const MapEntity &parent, Frame &frame,
                                const Camera &cam, std::span<const Texture> texs,
                                isize_t &cur_sort_key);
+    void render_leaf_portals(const MapEntity &parent, Frame &frame,
+                             const Camera &cam,
+                             std::span<const Texture> texs) const;
     void render(const MapEntity &parent, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs, isize_t &cur_sort_key);
 
@@ -78,6 +81,7 @@ class BSP {
     std::vector<Triangle *> leaf_tris_on_plane(const Plane &plane);
     void reset_sort_keys();
     void create_portals();
+    void merge_portal(const PVS::Portal &p);
     static void merge_portals(BSP &a, BSP &b);
 
     explicit BSP(BSP *parent);
@@ -98,6 +102,7 @@ public:
     isize_t n_triangles() const;
     isize_t max_depth() const;
     bool is_leaf() const;
+    bool is_innode() const;
     bool contains(const Vec3 &p) const;
     // get the leaf node a point is in
     const BSP &get_point_node(const Vec3 &point,
@@ -105,6 +110,11 @@ public:
     BSP &get_point_node(const Vec3 &point, const MapEntity &parent_entity);
     bool point_in_solid(const Vec3 &point,
                         const MapEntity &parent_entity) const;
+    // returns whichever node contains a plane coplanar to the given plane
+    const BSP *get_plane_node(const Plane &plane) const;
+    BSP *get_plane_node(const Plane &plane);
+    const BSP &closest_node(const Vec3 &v) const;
+    BSP &closest_node(const Vec3 &v);
 
     friend BSPTree;
 };

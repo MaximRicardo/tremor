@@ -449,3 +449,14 @@ bool RenderPolygon::intersects(const Plane &plane) const
 
     return false;
 }
+
+std::ostream &operator<<(std::ostream &os, const Polygon &poly)
+{
+    for (auto v = poly.vs.begin(); v < poly.vs.end(); ++v) {
+        if (v > poly.vs.begin())
+            os << ", ";
+        os << "(" << *v << ")";
+    }
+
+    return os;
+}
