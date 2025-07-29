@@ -12,10 +12,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <span>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -206,6 +206,62 @@ float Polygon::get_area() const
     }
 
     return area;
+}
+
+std::vector<Plane> Polygon::side_planes() const
+{
+    std::vector<Plane> planes;
+
+    for (auto p = this->vs.begin(); p < this->vs.end(); ++p) {
+        // p and next form a line
+        auto next = p == this->vs.end() - 1 ? this->vs.begin() : p + 1;
+
+        Vec3 center = p->mix(*next, 0.5f);
+        Vec3 normal = (center - this->get_center()).normalize();
+        planes.emplace_back(normal, *p);
+    }
+
+    return planes;
+}
+
+bool Polygon::partially_contains(const Polygon &other) const
+{
+    if (!this->is_on(other.get_plane()))
+        return false;
+
+    // seperating axis theorem
+
+    for (const auto &plane : this->side_planes()) {
+        if (other.is_in_front_of(plane))
+            return false;
+    }
+
+    for (const auto &plane : other.side_planes()) {
+        if (this->is_in_front_of(plane))
+            return false;
+    }
+
+    return true;
+}
+
+bool Polygon::is_in_front_of(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_in_front(v))
+            return false;
+    }
+
+    return true;
+}
+
+bool Polygon::is_behind(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_behind(v))
+            return false;
+    }
+
+    return true;
 }
 
 RenderPolygon::RenderPolygon(std::span<const Vec3> vs,

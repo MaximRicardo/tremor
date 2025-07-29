@@ -77,6 +77,8 @@ class BSP {
     std::vector<const Triangle *> leaf_tris_on_plane(const Plane &plane) const;
     std::vector<Triangle *> leaf_tris_on_plane(const Plane &plane);
     void reset_sort_keys();
+    void create_portals();
+    static void merge_portals(BSP &a, BSP &b);
 
     explicit BSP(BSP *parent);
     // innode constructor
@@ -114,11 +116,13 @@ class BSPTree {
     std::unique_ptr<BSP> root;
 
     // put these in BSP instead?
+    /*
     std::vector<BSP *> get_leaf_neighbors(const BSP &leaf);
     void create_leaf_portals(BSP &leaf, std::span<BSP *> neighbors);
     void create_leaf_portals(BSP &leaf, BSP &other, const Plane &boundary);
+    */
 
-    void create_portals();
+    void merge_portals();
 
 public:
     explicit BSPTree(std::span<const RenderPolygon> polys);

@@ -96,6 +96,7 @@ sort_by_score(std::span<const RenderPolygon> polys)
     return sorted;
 }
 
+/*
 BSP *node_containing_p(const Vec3 &p, std::span<BSP *> nodes)
 {
     for (auto node : nodes) {
@@ -117,6 +118,7 @@ const Polygon *poly_on_plane(std::span<const Polygon> polys, const Plane &plane)
 
     return nullptr;
 }
+*/
 
 /*
 bool poly_visible(const Polygon &poly, const Matrix4x4 &transform,
@@ -417,17 +419,6 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
     this->leaf_info().empty = this->parent->behind.get() != this;
 
     for (auto tri : tris) {
-        /*
-        const auto &par_p = this->parent->innode_info().plane;
-        bool v0_b = par_p.is_point_behind(ptri->vs[0]);
-        bool v1_b = par_p.is_point_behind(ptri->vs[1]);
-        bool v2_b = par_p.is_point_behind(ptri->vs[2]);
-        bool tri_behind = v0_b && v1_b && v2_b;
-        bool intersects = v0_b != v1_b || v0_b != v2_b;
-        if (!intersects &&
-            ((is_behind && !tri_behind) || (!is_behind && tri_behind)))
-            continue;
-            */
         bool add = false;
         for (const auto &poly : this->shape.polys) {
             auto plane = poly.get_plane();
@@ -538,6 +529,28 @@ void BSP::reset_sort_keys()
         this->in_front->reset_sort_keys();
 }
 
+void BSP::create_portals()
+{
+    assert(this->is_leaf());
+
+    for (const auto &poly : this->shape.polys) {
+        this->leaf_info().portals.emplace_back(poly, nullptr, this);
+    }
+}
+
+void BSP::merge_portals(BSP &a, BSP &b)
+{
+    for (auto &a_portal : a.leaf_info().portals) {
+        for (auto &b_portal : b.leaf_info().portals) {
+            if (!a_portal.shape.partially_contains(b_portal.shape))
+                continue;
+
+            a_portal.in_front = &b;
+            b_portal.in_front = &a;
+        }
+    }
+}
+
 BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent)
 {
     return const_cast<BSP &>(
@@ -557,7 +570,7 @@ bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
 BSPTree::BSPTree(std::span<const RenderPolygon> polys)
     : root(new BSP(polys, *this))
 {
-    this->create_portals();
+    this->merge_portals();
 }
 
 const BSP &BSPTree::get_root() const
@@ -570,6 +583,7 @@ BSP &BSPTree::get_root()
     return const_cast<BSP &>(std::as_const(*this).get_root());
 }
 
+#if 0
 std::vector<BSP *> BSPTree::get_leaf_neighbors(const BSP &leaf)
 {
     std::vector<BSP *> neighbors;
@@ -618,8 +632,8 @@ void BSPTree::create_leaf_portals(BSP &leaf, std::span<BSP *> neighbors)
 {
     for (const auto &poly : leaf.shape.polys) {
         auto plane = poly.get_plane();
-        BSP *other = node_containing_p(
-            poly.get_center() + plane.normal * 0.001f, neighbors);
+        BSP *other = node_containing_p(poly.get_center() + plane.normal * 0.01f,
+                                       neighbors);
         if (other /* && other->leaf_info().empty*/)
             this->create_leaf_portals(leaf, *other, poly.get_plane());
     }
@@ -638,6 +652,11 @@ void BSPTree::create_leaf_portals(BSP &a, BSP &b, const Plane &boundary)
     std::cout << "checking b\n";
     const Polygon *b_poly = poly_on_plane(b.shape.polys, boundary);
 
+    if (!a_poly)
+        a_poly = &a.shape.polys[0];
+    if (!b_poly)
+        b_poly = &b.shape.polys[0];
+
     // i see absolutely no way this could ever go wrong! :)
     if (!a_poly || !b_poly)
         return;
@@ -654,13 +673,18 @@ void BSPTree::create_leaf_portals(BSP &a, BSP &b, const Plane &boundary)
     a.leaf_info().portals.push_back(portal);
     b.leaf_info().portals.push_back(portal);
 }
+#endif
 
-void BSPTree::create_portals()
+void BSPTree::merge_portals()
 {
     std::cout << "n leaves = " << this->leaves.size() << "\n";
-    for (auto &leaf : this->leaves) {
-        auto neighbors = this->get_leaf_neighbors(*leaf);
-        this->create_leaf_portals(*leaf, neighbors);
+    for (auto leaf : this->leaves) {
+        for (auto other : this->leaves) {
+            if (leaf == other)
+                continue;
+
+            BSP::merge_portals(*leaf, *other);
+        }
     }
 }
 
@@ -670,16 +694,14 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     this->root->reset_sort_keys();
 
     std::stack<BSP *> nodes;
-    std::stack<isize_t> sort_keys;
     std::vector<const BSP *> visited;
 
     nodes.push(&this->root->get_point_node(cam.pos, parent));
-    sort_keys.push(0);
     visited.push_back(nodes.top());
+    isize_t key = 0;
     while (!nodes.empty()) {
         auto &cur = *nodes.top();
-        isize_t cur_key = sort_keys.top();
-        cur.render(parent, frame, cam, texs, cur_key);
+        cur.render(parent, frame, cam, texs, key);
 
         for (auto portal = cur.leaf_info().portals.begin();
              portal < cur.leaf_info().portals.end(); ++portal) {
@@ -697,13 +719,10 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
                 */
 
             nodes.push(&other);
-            sort_keys.push(
-                cur_key +
-                std::distance(cur.leaf_info().portals.begin(), portal));
             visited.push_back(&other);
         }
 
         nodes.pop();
-        sort_keys.pop();
+        ++key;
     }
 }

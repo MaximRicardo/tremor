@@ -17,6 +17,9 @@ class RenderPolygon;
 // is assumed to be counter clockwise
 class Polygon {
 
+    // each plane points outwards from the center of the polygon
+    std::vector<Plane> side_planes() const;
+
 public:
     std::vector<Vec3> vs;
 
@@ -38,6 +41,9 @@ public:
     bool invalid() const; // number of vertices is less than 3
     bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
     float get_area() const;
+    bool partially_contains(const Polygon &other) const;
+    bool is_in_front_of(const Plane &plane) const;
+    bool is_behind(const Plane &plane) const;
 };
 
 class RenderPolygon {
