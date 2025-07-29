@@ -264,6 +264,11 @@ bool Polygon::is_behind(const Plane &plane) const
     return true;
 }
 
+void Polygon::flip_dir()
+{
+    std::reverse(this->vs.begin(), this->vs.end());
+}
+
 RenderPolygon::RenderPolygon(std::span<const Vec3> vs,
                              std::span<const Vec2> vts, size_t tex_idx)
 {

@@ -116,13 +116,14 @@ class BSPTree {
     std::unique_ptr<BSP> root;
 
     // put these in BSP instead?
-    /*
     std::vector<BSP *> get_leaf_neighbors(const BSP &leaf);
+    /*
     void create_leaf_portals(BSP &leaf, std::span<BSP *> neighbors);
     void create_leaf_portals(BSP &leaf, BSP &other, const Plane &boundary);
     */
 
     void merge_portals();
+    void remove_useless_portals();
 
 public:
     explicit BSPTree(std::span<const RenderPolygon> polys);

@@ -44,6 +44,7 @@ public:
     bool partially_contains(const Polygon &other) const;
     bool is_in_front_of(const Plane &plane) const;
     bool is_behind(const Plane &plane) const;
+    void flip_dir();
 };
 
 class RenderPolygon {
