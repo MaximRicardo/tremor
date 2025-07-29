@@ -12,6 +12,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <span>
 #include <tuple>
 #include <utility>
@@ -183,6 +184,30 @@ bool Polygon::invalid() const
     return this->vs.size() < 3;
 }
 
+bool Polygon::is_on(const Plane &plane, float epsilon) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_on(v, epsilon))
+            return false;
+    }
+
+    return true;
+}
+
+float Polygon::get_area() const
+{
+    // TODO: make this faster if needed
+
+    auto tris = this->get_triangles();
+
+    float area = 0.f;
+    for (const auto &tri : tris) {
+        area += tri.get_area();
+    }
+
+    return area;
+}
+
 RenderPolygon::RenderPolygon(std::span<const Vec3> vs,
                              std::span<const Vec2> vts, size_t tex_idx)
 {
@@ -339,7 +364,7 @@ bool RenderPolygon::invalid() const
 
 float RenderPolygon::get_area() const
 {
-    // TODO: bruh improve this
+    // TODO: make this faster if needed
 
     auto tris = this->get_triangles();
 

@@ -320,9 +320,9 @@ BrushPlane &Brush::poly_plane(const Polygon &poly)
 ConvexShape Brush::get_shape() const
 {
     ConvexShape shape = ConvexShape::box(
-        Vec3(Consts::map_bounding_box_max_x - Consts::map_bounding_box_min_x,
-             Consts::map_bounding_box_max_y - Consts::map_bounding_box_min_y,
-             Consts::map_bounding_box_max_z - Consts::map_bounding_box_min_z));
+        Vec3(Consts::map_bounding_box_max - Consts::map_bounding_box_min,
+             Consts::map_bounding_box_max - Consts::map_bounding_box_min,
+             Consts::map_bounding_box_max - Consts::map_bounding_box_min));
 
     for (const auto &plane : this->planes) {
         shape.clip(plane.get_plane().flipped());

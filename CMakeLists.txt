@@ -13,11 +13,11 @@ add_compile_options(-std=c++20 -Wall -Wextra -Wpedantic -fno-rtti)
 add_compile_options(-Dm_RAYLIB=1)
 
 # faster
-add_compile_options(-O1)
+# add_compile_options(-O1)
 
 # i am speed
-# add_compile_options(-ftree-vectorize -msse2 -mfpmath=sse -O3 -flto)
-# add_link_options(-flto)
+ add_compile_options(-ftree-vectorize -msse2 -mfpmath=sse -O3 -flto)
+ add_link_options(-flto)
 # even more speed
 # add_compile_options(-DNDEBUG)
 

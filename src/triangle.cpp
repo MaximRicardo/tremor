@@ -88,9 +88,22 @@ void Triangle::render(const Matrix4x4 &transform, Frame &frame,
 {
     this->project(transform, cam);
 
-    for (unsigned i = 0; i < this->last_proj_ret.n_sub_tris; i++) {
+    for (unsigned i = 0; i < this->last_proj_ret.n_sub_tris; ++i) {
         this->last_proj_ret.sub_tris[i].render(frame, texs);
     }
+}
+
+bool Triangle::is_visible(const Matrix4x4 &transform, const Frame &frame,
+                          const Camera &cam) const
+{
+    this->project(transform, cam);
+
+    for (unsigned i = 0; i < this->last_proj_ret.n_sub_tris; ++i) {
+        if (this->last_proj_ret.sub_tris[i].is_visible(frame))
+            return true;
+    }
+
+    return false;
 }
 
 Plane Triangle::get_plane() const
@@ -127,4 +140,10 @@ bool Triangle::intersects(const Plane &plane) const
     bool v1 = plane.is_point_behind(this->vs[1]);
     bool v2 = plane.is_point_behind(this->vs[2]);
     return v0 != v1 || v0 != v2;
+}
+
+bool Triangle::is_on(const Plane &plane) const
+{
+    return plane.is_point_on(this->vs[0]) && plane.is_point_on(this->vs[1]) &&
+           plane.is_point_on(this->vs[2]);
 }

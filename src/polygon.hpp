@@ -2,6 +2,7 @@
 
 #include "aabb.hpp"
 #include "camera.hpp"
+#include "constants.hpp"
 #include "frame.hpp"
 #include "mat4x4.hpp"
 #include "plane.hpp"
@@ -35,6 +36,8 @@ public:
     AABB get_aabb() const;
     bool empty() const;
     bool invalid() const; // number of vertices is less than 3
+    bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
+    float get_area() const;
 };
 
 class RenderPolygon {

@@ -17,7 +17,7 @@ class MapEntity {
 
 public:
     // point entites don't have a bsp
-    std::unique_ptr<BSP> bsp;
+    std::unique_ptr<BSPTree> bsp;
     Vec3 pos;
     std::string name;
 

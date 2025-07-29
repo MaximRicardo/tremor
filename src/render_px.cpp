@@ -10,6 +10,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 
 namespace {
 
@@ -148,8 +149,8 @@ size_t select_mipmap(const SubTriangle &tri, const Texture &tex)
 } // namespace
 
 // tri               - the triangle the line belongs to
-void RenderPixels::render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
-                                          const SubTriangle &tri,
+void RenderPixels::render_horizontal_line(int32_t y, int32_t x_0, int32_t x_1,
+                                          Frame &frame, const SubTriangle &tri,
                                           std::span<const Texture> texs)
 {
     if (y < 0 || y >= Res::height)
@@ -161,7 +162,7 @@ void RenderPixels::render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
     x_0 = std::max(x_0, 0);
     x_1 = std::min(x_1, Res::width - 1);
 
-    for (int x = x_0; x <= x_1; ++x) {
+    for (int32_t x = x_0; x <= x_1; ++x) {
         size_t idx = Index::to_1d(Vec2i(x, y), Res::width);
         assert(idx < Res::n_pixels());
 
@@ -182,4 +183,33 @@ void RenderPixels::render_horizontal_line(int y, int x_0, int x_1, Frame &frame,
 
         frame.pixels[idx] = Palette::palette[tex.get_pixels(mipmap)[texel]];
     }
+}
+
+bool RenderPixels::horizontal_line_visible(int32_t y, int32_t x_0, int32_t x_1,
+                                           const Frame &frame,
+                                           const SubTriangle &tri)
+{
+    if (y < 0 || y >= Res::height)
+        return false;
+
+    if (x_0 >= Res::width || x_1 < 0)
+        return false;
+
+    x_0 = std::max(x_0, 0);
+    x_1 = std::min(x_1, Res::width - 1);
+
+    for (int32_t x = x_0; x <= x_1; ++x) {
+        size_t idx = Index::to_1d(Vec2i(x, y), Res::width);
+        assert(idx < Res::n_pixels());
+
+        Vec3 bary_coords = get_barycentric_coords(
+            Vec2(x, y), tri.get_screen_vs()[0], tri.get_screen_vs()[1],
+            tri.get_screen_vs()[2]);
+
+        float z = interpolate_z(tri, bary_coords);
+        if (ignore_depth_buffer || z < frame.depths[idx])
+            return true;
+    }
+
+    return false;
 }

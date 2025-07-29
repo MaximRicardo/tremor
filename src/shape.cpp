@@ -2,9 +2,12 @@
 #include "constants.hpp"
 #include "plane.hpp"
 #include "polygon.hpp"
+#include "ssize.hpp"
+#include "vector/vec3.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <iostream>
 #include <vector>
 
 namespace {
@@ -66,8 +69,9 @@ ConvexShape ConvexShape::box(Vec3 scale)
 
 void ConvexShape::remove_empty_polys()
 {
-    std::erase_if(this->polys,
-                  [](const Polygon &poly) { return poly.vs.empty(); });
+    std::erase_if(this->polys, [](const Polygon &poly) {
+        return poly.vs.empty() || poly.get_area() < Consts::epsilon;
+    });
 }
 
 void ConvexShape::clip(const Plane &plane)
@@ -81,8 +85,7 @@ void ConvexShape::clip(const Plane &plane)
 
     if (intersections.size() >= 3) {
         // creates a poly to fill in the hole in the shape caused by clipping
-        Polygon new_poly(intersections, -plane.normal);
-        this->polys.push_back(new_poly);
+        this->polys.emplace_back(intersections, -plane.normal);
     }
 }
 
@@ -126,4 +129,32 @@ AABB ConvexShape::get_aabb() const
     }
 
     return box;
+}
+
+bool ConvexShape::contains(const Vec3 &p, float epsilon) const
+{
+    for (const auto &poly : this->polys) {
+        auto plane = poly.get_plane();
+        if (plane.is_point_in_front(p) && !plane.is_point_on(p, epsilon)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+Vec3 ConvexShape::get_center() const
+{
+    Vec3 center = Vec3::zero();
+    isize_t n = 0;
+
+    for (const auto &poly : this->polys) {
+        for (const auto &v : poly.vs) {
+            ++n;
+            center += v;
+        }
+    }
+
+    center /= n;
+    return center;
 }

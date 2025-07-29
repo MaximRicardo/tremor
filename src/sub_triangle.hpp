@@ -31,7 +31,8 @@ public:
 
     std::array<Vec2i, 3> get_screen_vs() const;
     void project_to_scr(const Camera &cam);
-    void render(Frame &frame, std::span<const Texture> texs);
+    void render(Frame &frame, std::span<const Texture> texs) const;
+    bool is_visible(const Frame &frame) const;
     // goes up to 1 for the whole texture
     float tex_space_area() const;
 

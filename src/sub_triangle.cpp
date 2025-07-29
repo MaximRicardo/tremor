@@ -178,7 +178,7 @@ void SubTriangle::project_to_scr(const Camera &cam)
     this->screen_vs = norm_scr_vs_to_scr(norm_scr_vs);
 }
 
-void SubTriangle::render(Frame &frame, std::span<const Texture> texs)
+void SubTriangle::render(Frame &frame, std::span<const Texture> texs) const
 {
     TriangleLines lines = get_triangle_edge_list(this->screen_vs);
 
@@ -198,6 +198,27 @@ void SubTriangle::render(Frame &frame, std::span<const Texture> texs)
                                                  frame, *this, texs);
         }
     }
+}
+
+bool SubTriangle::is_visible(const Frame &frame) const
+{
+    TriangleLines lines = get_triangle_edge_list(this->screen_vs);
+
+    for (size_t i = 0; i < lines.n_lines; i++) {
+        int32_t y = i + lines.y_offset;
+
+        if (lines.lines[i].max_x < 0 || lines.lines[i].min_x >= Res::width)
+            continue;
+        int32_t clpd_min = std::max(lines.lines[i].min_x, 0);
+        int32_t clpd_max = std::min(lines.lines[i].max_x, Res::width - 1);
+
+        assert(!RSpan::enabled);
+        if (RenderPixels::horizontal_line_visible(y, clpd_min, clpd_max - 1,
+                                                  frame, *this))
+            return true;
+    }
+
+    return false;
 }
 
 float SubTriangle::tex_space_area() const

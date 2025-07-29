@@ -5,6 +5,7 @@
 #include "mat4x4.hpp"
 #include "plane.hpp"
 #include "polygon.hpp"
+#include "pvs.hpp"
 #include "rspan.hpp"
 #include "shape.hpp"
 #include "ssize.hpp"
@@ -17,6 +18,7 @@
 #include <iterator>
 #include <memory>
 #include <span>
+#include <stack>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -28,7 +30,7 @@ constexpr float split_plane_epsilon = 0.0001f;
 constexpr float min_poly_area = 0.f;
 // if false, the polygons in each leaf_info().edge_tris will be rendered instead
 // of the polygons in each innode_info().tris.
-constexpr bool render_innodes = true;
+constexpr bool render_innodes = false;
 constexpr bool optimize_tree = false;
 
 Camera get_rel_cam(const Camera &cam, const Matrix4x4 &inv_transform)
@@ -94,6 +96,43 @@ sort_by_score(std::span<const RenderPolygon> polys)
     return sorted;
 }
 
+BSP *node_containing_p(const Vec3 &p, std::span<BSP *> nodes)
+{
+    for (auto node : nodes) {
+        if (node->contains(p))
+            return node;
+    }
+
+    return nullptr;
+}
+
+// returns the first one
+const Polygon *poly_on_plane(std::span<const Polygon> polys, const Plane &plane)
+{
+    for (const auto &poly : polys) {
+        if (poly.is_on(plane, 0.1f)) {
+            return &poly;
+        }
+    }
+
+    return nullptr;
+}
+
+/*
+bool poly_visible(const Polygon &poly, const Matrix4x4 &transform,
+                  const Frame &frame, const Camera &cam)
+{
+    auto tris = poly.get_triangles();
+
+    for (const auto &tri : tris) {
+        if (tri.is_visible(transform, frame, cam))
+            return true;
+    }
+
+    return false;
+}
+*/
+
 } // namespace
 
 BSP::BSP(BSP *parent) : parent(parent) {}
@@ -107,7 +146,7 @@ BSP::BSP(const Plane &plane, std::span<const Triangle> tris, BSP *parent)
     this->innode_info().tris.assign(tris.begin(), tris.end());
 }
 
-BSP::BSP(std::span<const RenderPolygon> og_polys)
+BSP::BSP(std::span<const RenderPolygon> og_polys, BSPTree &parent)
 {
     assert(og_polys.size() > 0);
 
@@ -119,10 +158,17 @@ BSP::BSP(std::span<const RenderPolygon> og_polys)
     this->info = std::make_unique<InNodeInfo>();
     this->innode_info().plane = sorted[0]->get_plane();
 
-    std::vector<RenderPolygon> other_polys;
+    std::vector<RenderPolygon> others;
     for (const auto &poly : sorted)
-        other_polys.push_back(*poly);
-    this->create_outline(other_polys);
+        others.push_back(*poly);
+
+    for (const auto &poly : others) {
+        this->insert(poly);
+    }
+
+    // a seperate pass is required to allocate all the leaf nodes once we know
+    // we're done inserting triangles
+    this->create_leaf_nodes(parent);
 
     std::cout << "done creating bsp\n";
     std::cout << "n nodes = " << this->n_nodes() << "\n";
@@ -218,17 +264,6 @@ void BSP::insert(const RenderPolygon &poly)
     }
 }
 
-void BSP::create_outline(std::span<const RenderPolygon> tris)
-{
-    for (const auto &tri : tris) {
-        this->insert(tri);
-    }
-
-    // a seperate pass is required to allocate all the leaf nodes once we know
-    // we're done inserting triangles
-    this->create_leaf_nodes();
-}
-
 void BSP::render_innode_tris(const MapEntity &parent, Frame &frame,
                              const Camera &cam, std::span<const Texture> texs,
                              isize_t &cur_sort_key)
@@ -253,6 +288,9 @@ void BSP::render_leaf_node_tris(const MapEntity &parent, Frame &frame,
     for (auto &tri : this->leaf_info().edge_tris) {
         if (tri->get_plane().is_point_behind(rel_cam.pos))
             continue;
+        // tri was already rendered in front of its current position
+        if (tri->sort_key >= 0 && tri->sort_key < cur_sort_key)
+            continue;
         tri->sort_key = cur_sort_key++;
         tri->render(parent.get_transform(), frame, cam, texs);
     }
@@ -266,6 +304,14 @@ void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     if (this->is_leaf()) {
         if (!render_innodes)
             this->render_leaf_node_tris(parent, frame, cam, texs, cur_sort_key);
+        /*
+        for (const auto &portal : this->leaf_info().portals) {
+            auto tris = portal.shape.get_triangles();
+            for (const auto &tri : tris) {
+                tri.render(parent.get_transform(), frame, cam, texs);
+            }
+        }
+        */
         return;
     }
 
@@ -302,7 +348,7 @@ void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     this->render(parent, frame, cam, texs, start_key);
 }
 
-int32_t BSP::n_nodes() const
+isize_t BSP::n_nodes() const
 {
     int32_t count = 1;
 
@@ -314,7 +360,7 @@ int32_t BSP::n_nodes() const
     return count;
 }
 
-int32_t BSP::n_triangles() const
+isize_t BSP::n_triangles() const
 {
     if (this->is_leaf()) {
         if (!render_innodes)
@@ -331,7 +377,7 @@ int32_t BSP::n_triangles() const
     }
 }
 
-int32_t BSP::max_depth() const
+isize_t BSP::max_depth() const
 {
     if (this->is_leaf())
         return 1;
@@ -344,21 +390,25 @@ bool BSP::is_leaf() const
     return !this->in_front && !this->behind;
 }
 
-void BSP::alloc_leaf_nodes()
+void BSP::alloc_leaf_nodes(BSPTree &parent)
 {
     assert(this->has_innode_info());
 
     // std::make_unique can't access the private BSP constructor, so gonna have
     // to use new
-    if (!this->behind)
+    if (!this->behind) {
         this->behind = std::unique_ptr<BSP>(new BSP(this));
-    if (!this->in_front)
+        parent.leaves.push_back(this->behind.get());
+    }
+    if (!this->in_front) {
         this->in_front = std::unique_ptr<BSP>(new BSP(this));
+        parent.leaves.push_back(this->in_front.get());
+    }
 }
 
 void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 {
-    bool is_behind = this == this->parent->behind.get();
+    // bool is_behind = this == this->parent->behind.get();
 
     this->info = std::make_unique<LeafInfo>();
 
@@ -366,40 +416,43 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
     // in front of their parents are always in empty space
     this->leaf_info().empty = this->parent->behind.get() != this;
 
-    for (auto ptri : tris) {
+    for (auto tri : tris) {
         /*
-        bool skip = (is_behind && this->parent->innode_info().plane.normal.dot(
-                                      ptri->get_plane().normal) > 0.f) ||
-                    (!is_behind && this->parent->innode_info().plane.normal.dot(
-                                       ptri->get_plane().normal) < 0.f);
-        if (skip)
-            continue;
-            */
         const auto &par_p = this->parent->innode_info().plane;
         bool v0_b = par_p.is_point_behind(ptri->vs[0]);
         bool v1_b = par_p.is_point_behind(ptri->vs[1]);
         bool v2_b = par_p.is_point_behind(ptri->vs[2]);
         bool tri_behind = v0_b && v1_b && v2_b;
-        bool intersects = v0_b != v1_b || v0_b != v2_b || v1_b != v2_b;
+        bool intersects = v0_b != v1_b || v0_b != v2_b;
         if (!intersects &&
             ((is_behind && !tri_behind) || (!is_behind && tri_behind)))
             continue;
+            */
+        bool add = false;
+        for (const auto &poly : this->shape.polys) {
+            auto plane = poly.get_plane();
+            if (tri->is_on(plane)) {
+                add = true;
+            }
+        }
 
-        this->leaf_info().edge_tris.push_back(ptri);
+        if (add)
+            this->leaf_info().edge_tris.push_back(tri);
     }
 }
 
 // IF PERFORMANCE BECOMES AN ISSUE, CHECK IF COMPILER CONVERTS THE TRIS VECTOR
 // TO A REFERENCE!
 void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
-                            std::vector<Triangle *> tris)
+                            std::vector<Triangle *> tris, BSPTree &parent)
 {
     this->b_box = cur_hull.get_aabb();
+    this->shape = cur_hull;
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node(tris);
     } else {
-        this->alloc_leaf_nodes();
+        this->alloc_leaf_nodes(parent);
 
         for (auto &tri : this->innode_info().tris) {
             tris.push_back(&tri);
@@ -410,25 +463,31 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
         behind_hull.clip(this->innode_info().plane.flipped());
         in_front_hull.clip(this->innode_info().plane);
 
-        this->behind->create_leaf_nodes(behind_hull, tris);
-        this->in_front->create_leaf_nodes(in_front_hull, tris);
+        this->behind->create_leaf_nodes(behind_hull, tris, parent);
+        this->in_front->create_leaf_nodes(in_front_hull, tris, parent);
     }
 }
 
-void BSP::create_leaf_nodes()
+void BSP::create_leaf_nodes(BSPTree &parent)
 {
     auto world_hull = ConvexShape::box(
-        Vec3(Consts::map_bounding_box_max_x - Consts::map_bounding_box_min_x,
-             Consts::map_bounding_box_max_y - Consts::map_bounding_box_min_y,
-             Consts::map_bounding_box_max_z - Consts::map_bounding_box_min_z));
+        Vec3(Consts::map_bounding_box_max - Consts::map_bounding_box_min,
+             Consts::map_bounding_box_max - Consts::map_bounding_box_min,
+             Consts::map_bounding_box_max - Consts::map_bounding_box_min));
 
     std::vector<Triangle *> ignore;
-    this->create_leaf_nodes(world_hull, ignore);
+    this->create_leaf_nodes(world_hull, ignore, parent);
 }
 
-const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
+bool BSP::contains(const Vec3 &p) const
 {
-    Vec3 rel_p = parent.get_inv_transform() * Vec4(point, 1.f);
+    return this->shape.contains(p);
+}
+
+const BSP &BSP::get_point_node(const Vec3 &point,
+                               const Matrix4x4 &point_trnsfrm) const
+{
+    Vec3 rel_p = point_trnsfrm * Vec4(point, 1.f);
 
     if (this->is_leaf()) {
         assert(this->has_leaf_info());
@@ -437,8 +496,46 @@ const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
         auto &node = this->innode_info().plane.is_point_behind(rel_p)
                          ? this->behind
                          : this->in_front;
-        return node->get_point_node(point, parent);
+        return node->get_point_node(point, point_trnsfrm);
     }
+}
+
+BSP &BSP::get_point_node(const Vec3 &point, const Matrix4x4 &point_trnsfrm)
+{
+    return const_cast<BSP &>(
+        std::as_const(*this).get_point_node(point, point_trnsfrm));
+}
+
+std::vector<const Triangle *> BSP::leaf_tris_on_plane(const Plane &plane) const
+{
+    std::vector<const Triangle *> ret;
+
+    for (auto &tri : this->leaf_info().edge_tris) {
+        if (tri->is_on(plane))
+            ret.push_back(tri);
+    }
+
+    return ret;
+}
+
+const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
+{
+    return this->get_point_node(point, parent.get_inv_transform());
+}
+
+void BSP::reset_sort_keys()
+{
+    if (this->is_leaf())
+        return;
+
+    for (auto &tri : this->innode_info().tris) {
+        tri.sort_key = -1;
+    }
+
+    if (this->behind)
+        this->behind->reset_sort_keys();
+    if (this->in_front)
+        this->in_front->reset_sort_keys();
 }
 
 BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent)
@@ -452,7 +549,161 @@ bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
     auto &p_node = this->get_point_node(point, parent);
 
     bool inside =
-        p_node.b_box.contains(parent.get_inv_transform() * Vec4(point, 1.f));
+        p_node.shape.contains(parent.get_inv_transform() * Vec4(point, 1.f));
     assert(inside);
     return !p_node.leaf_info().empty;
+}
+
+BSPTree::BSPTree(std::span<const RenderPolygon> polys)
+    : root(new BSP(polys, *this))
+{
+    this->create_portals();
+}
+
+const BSP &BSPTree::get_root() const
+{
+    return *this->root;
+}
+
+BSP &BSPTree::get_root()
+{
+    return const_cast<BSP &>(std::as_const(*this).get_root());
+}
+
+std::vector<BSP *> BSPTree::get_leaf_neighbors(const BSP &leaf)
+{
+    std::vector<BSP *> neighbors;
+
+    /*
+    BSP *cur_node = leaf.parent;
+    const BSP *prev_node = &leaf;
+    isize_t n_neighbors = leaf.shape.polys.size();
+    for (isize_t i = 0; i < n_neighbors; ++i) {
+        bool from_behind = prev_node == cur_node->behind.get();
+        BSP *neighbor =
+            from_behind ? cur_node->in_front.get() : cur_node->behind.get();
+        if (!neighbor->is_leaf())
+            break;
+        // if this assert goes off, try picking the child leaf closest to leaf
+        // assert(neighbor->is_leaf());
+        neighbors.push_back(neighbor);
+
+        prev_node = cur_node;
+        cur_node = cur_node->parent;
+    }
+    */
+
+    // this can probably be optimized
+    for (const auto &poly : leaf.shape.polys) {
+        auto plane = poly.get_plane();
+
+        Vec3 p = poly.get_center() + plane.normal * 0.1f;
+        if (!this->root->b_box.contains(p))
+            continue;
+
+        auto &node = this->root->get_point_node(p, Matrix4x4::identity());
+
+        assert(node.shape.contains(p));
+
+        assert(node.is_leaf());
+        if (std::find(neighbors.begin(), neighbors.end(), &node) ==
+            neighbors.end())
+            neighbors.push_back(&node);
+    }
+
+    return neighbors;
+}
+
+void BSPTree::create_leaf_portals(BSP &leaf, std::span<BSP *> neighbors)
+{
+    for (const auto &poly : leaf.shape.polys) {
+        auto plane = poly.get_plane();
+        BSP *other = node_containing_p(
+            poly.get_center() + plane.normal * 0.001f, neighbors);
+        if (other /* && other->leaf_info().empty*/)
+            this->create_leaf_portals(leaf, *other, poly.get_plane());
+    }
+}
+
+void BSPTree::create_leaf_portals(BSP &a, BSP &b, const Plane &boundary)
+{
+    assert(!a.shape.polys.empty());
+    assert(!b.shape.polys.empty());
+
+    std::cout << "a center = " << a.b_box.get_center() << "\n";
+    std::cout << "b center = " << b.b_box.get_center() << "\n";
+
+    std::cout << "checking a\n";
+    const Polygon *a_poly = poly_on_plane(a.shape.polys, boundary);
+    std::cout << "checking b\n";
+    const Polygon *b_poly = poly_on_plane(b.shape.polys, boundary);
+
+    // i see absolutely no way this could ever go wrong! :)
+    if (!a_poly || !b_poly)
+        return;
+
+    bool a_smallest = a_poly->get_area() < b_poly->get_area();
+    const Polygon &smallest = a_smallest ? *a_poly : *b_poly;
+
+    // the polygon always points outwards from it's node
+    BSP &in_front = a_smallest ? b : a;
+    BSP &behind = a_smallest ? a : b;
+
+    PVS::Portal portal(smallest, &in_front, &behind);
+
+    a.leaf_info().portals.push_back(portal);
+    b.leaf_info().portals.push_back(portal);
+}
+
+void BSPTree::create_portals()
+{
+    std::cout << "n leaves = " << this->leaves.size() << "\n";
+    for (auto &leaf : this->leaves) {
+        auto neighbors = this->get_leaf_neighbors(*leaf);
+        this->create_leaf_portals(*leaf, neighbors);
+    }
+}
+
+void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
+                     std::span<const Texture> texs)
+{
+    this->root->reset_sort_keys();
+
+    std::stack<BSP *> nodes;
+    std::stack<isize_t> sort_keys;
+    std::vector<const BSP *> visited;
+
+    nodes.push(&this->root->get_point_node(cam.pos, parent));
+    sort_keys.push(0);
+    visited.push_back(nodes.top());
+    while (!nodes.empty()) {
+        auto &cur = *nodes.top();
+        isize_t cur_key = sort_keys.top();
+        cur.render(parent, frame, cam, texs, cur_key);
+
+        for (auto portal = cur.leaf_info().portals.begin();
+             portal < cur.leaf_info().portals.end(); ++portal) {
+            BSP &other =
+                portal->behind != &cur ? *portal->behind : *portal->in_front;
+            assert(&other != &cur);
+            if (std::find(visited.rbegin(), visited.rend(), &other) !=
+                visited.rend())
+                continue;
+
+            /*
+            if (!poly_visible(portal->shape, parent.get_transform(), frame,
+                              cam))
+                continue;
+                */
+
+            nodes.push(&other);
+            sort_keys.push(
+                cur_key +
+                std::distance(cur.leaf_info().portals.begin(), portal));
+            visited.push_back(&other);
+        }
+
+        nodes.pop();
+        sort_keys.pop();
+    }
 }

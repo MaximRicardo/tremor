@@ -10,11 +10,10 @@ AABB::AABB(Vec3 min, Vec3 max) : min(min), max(max) {}
 
 AABB AABB::map_box()
 {
-    return AABB(
-        Vec3(Consts::map_bounding_box_min_x, Consts::map_bounding_box_min_y,
-             Consts::map_bounding_box_min_z),
-        Vec3(Consts::map_bounding_box_max_x, Consts::map_bounding_box_max_y,
-             Consts::map_bounding_box_max_z));
+    return AABB(Vec3(Consts::map_bounding_box_min, Consts::map_bounding_box_min,
+                     Consts::map_bounding_box_min),
+                Vec3(Consts::map_bounding_box_max, Consts::map_bounding_box_max,
+                     Consts::map_bounding_box_max));
 }
 
 bool AABB::contains(const Vec3 &p) const

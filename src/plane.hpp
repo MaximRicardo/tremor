@@ -41,6 +41,8 @@ public:
 
     bool is_coplanar(const Plane &plane, float epsilon = Consts::epsilon) const;
     bool is_point_behind(const Vec3 &p) const;
+    bool is_point_in_front(const Vec3 &p) const;
+    bool is_point_on(const Vec3 &p, float epsilon = Consts::epsilon) const;
 
     Plane flipped() const;
 };

@@ -6,7 +6,7 @@
 
 MapEntity::MapEntity(std::span<const RenderPolygon> polys, Vec3 pos,
                      std::string_view name)
-    : bsp(polys.empty() ? nullptr : new BSP(polys)), pos(pos),
+    : bsp(polys.empty() ? nullptr : new BSPTree(polys)), pos(pos),
       name(std::string(name))
 {}
 
@@ -62,7 +62,7 @@ size_t Map::n_triangles() const
     for (const auto &entity : this->entities) {
         if (entity.is_point_entity())
             continue;
-        n += entity.bsp->n_triangles();
+        n += entity.bsp->get_root().n_triangles();
     }
 
     return n;

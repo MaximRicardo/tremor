@@ -64,12 +64,11 @@ int main(int argc, char *argv[])
               << " triangles before BSP generation\n";
     std::cout << "map has " << map.n_triangles()
               << " triangles after BSP generation\n";
-    std::cout << "worldspawn max depth is " << worldspawn.bsp->max_depth()
-              << "\n";
+    std::cout << "worldspawn max depth is "
+              << worldspawn.bsp->get_root().max_depth() << "\n";
 
     Camera cam(map.get_player_start(), Angle(0.f), Angle(0.f),
                Angle(90.f, Angle::Type::DEGREES), 300.f);
-    cam.pos -= Vec3(0.f, 0.f, 32.f);
 
     Frame frame;
     FTerm fterm(frame);
@@ -114,17 +113,18 @@ int main(int argc, char *argv[])
             }
         }
 
-        std::cout << "rendering spans\n";
-
-        if (RSpan::enabled)
+        if (RSpan::enabled) {
+            std::cout << "rendering spans\n";
             RSpan::render(frame, map.textures);
+        }
 
         std::cout << "printing on screen\n";
 
         fterm.move_cursor(Vec2i::zero());
         fterm.c_printf("fps = %f\n", 1.f / delta_time);
-        bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
-        worldspawn.bsp->get_point_node(cam.pos, worldspawn);
+        bool cam_in_solid =
+            worldspawn.bsp->get_root().point_in_solid(cam.pos, worldspawn);
+        worldspawn.bsp->get_root().get_point_node(cam.pos, worldspawn);
         fterm.c_printf("cam_in_solid = %d\n", cam_in_solid);
 
         std::cout << "updating frame\n";

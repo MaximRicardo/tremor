@@ -44,10 +44,13 @@ public:
 
     void render(const Matrix4x4 &tranform, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
+    bool is_visible(const Matrix4x4 &transform, const Frame &frame,
+                    const Camera &cam) const;
 
     Plane get_plane() const;
     Plane get_plane(const Matrix4x4 &transform) const;
     float get_area() const;
     bool is_degenerate() const;
     bool intersects(const Plane &plane) const;
+    bool is_on(const Plane &plane) const;
 };

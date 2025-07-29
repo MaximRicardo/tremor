@@ -192,14 +192,25 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
 bool Plane::is_coplanar(const Plane &plane, float epsilon) const
 {
     return (this->normal.dot(plane.normal) > 1.f - epsilon &&
-            std::abs(this->d - plane.d) < epsilon) ||
+            std::abs(this->d - plane.d) <= epsilon) ||
            (this->normal.dot(-plane.normal) > 1.f - epsilon &&
-            std::abs(this->d + plane.d) < epsilon);
+            std::abs(this->d + plane.d) <= epsilon);
 }
 
 bool Plane::is_point_behind(const Vec3 &p) const
 {
     return this->normal.dot(p) < this->d;
+}
+
+bool Plane::is_point_in_front(const Vec3 &p) const
+{
+    return this->normal.dot(p) > this->d;
+}
+
+bool Plane::is_point_on(const Vec3 &p, float epsilon) const
+{
+    float x = this->normal.dot(p);
+    return x - epsilon <= this->d && x + epsilon >= this->d;
 }
 
 Plane Plane::flipped() const
