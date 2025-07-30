@@ -6,7 +6,6 @@
 #include "plane.hpp"
 #include "polygon.hpp"
 #include "pvs.hpp"
-#include "render_px.hpp"
 #include "rspan.hpp"
 #include "shape.hpp"
 #include "ssize.hpp"
@@ -432,7 +431,16 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
     this->leaf_info().empty = this->parent->behind.get() != this;
 
     for (auto tri : tris) {
-        this->leaf_info().edge_tris.push_back(tri);
+        bool add = false;
+        for (const auto &poly : this->shape.polys) {
+            auto plane = poly.get_plane();
+            if (tri->is_on(plane)) {
+                add = true;
+            }
+        }
+
+        if (add)
+            this->leaf_info().edge_tris.push_back(tri);
     }
 
     this->create_portals();
@@ -449,6 +457,7 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node(tris);
     } else {
+        /*
         if (this->parent) {
             bool is_behind = this->parent->behind.get() == this;
             std::erase_if(tris, [this, is_behind](const auto &tri) {
@@ -460,6 +469,7 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
                     return tri->is_behind(this->innode_info().plane) && !is_on;
             });
         }
+        */
 
         this->alloc_leaf_nodes(parent);
 
@@ -880,8 +890,6 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     while (!nodes.empty()) {
         auto &cur = *nodes.top();
         nodes.pop();
-        RenderPixels::render_point(cur.shape.get_center(), frame, cam,
-                                   Color(255, 0, 0), 5, false);
         assert(cur.is_leaf());
         cur.render(parent, frame, cam, texs, key);
 
