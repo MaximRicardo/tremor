@@ -27,6 +27,7 @@ class BSP {
         bool empty;
         // triangles lying on the edge of the node's hull.
         std::vector<Triangle *> edge_tris;
+        bool rendered = false;
 
         // these are used for PVS
         std::vector<BSP *> pv_leaves;
@@ -81,7 +82,7 @@ class BSP {
     BSP &get_point_node(const Vec3 &point, const Matrix4x4 &point_trnsfrm);
     std::vector<const Triangle *> leaf_tris_on_plane(const Plane &plane) const;
     std::vector<Triangle *> leaf_tris_on_plane(const Plane &plane);
-    void reset_sort_keys();
+    void new_frame();
     void create_portals();
     void merge_portal(const PVS::Portal &p);
     static void merge_portals(BSP &a, BSP &b);

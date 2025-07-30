@@ -99,30 +99,6 @@ sort_by_score(std::span<const RenderPolygon> polys)
 }
 
 /*
-BSP *node_containing_p(const Vec3 &p, std::span<BSP *> nodes)
-{
-    for (auto node : nodes) {
-        if (node->contains(p))
-            return node;
-    }
-
-    return nullptr;
-}
-
-// returns the first one
-const Polygon *poly_on_plane(std::span<const Polygon> polys, const Plane &plane)
-{
-    for (const auto &poly : polys) {
-        if (poly.is_on(plane, 0.1f)) {
-            return &poly;
-        }
-    }
-
-    return nullptr;
-}
-*/
-
-/*
 bool poly_visible(const Polygon &poly, const Matrix4x4 &transform,
                   const Frame &frame, const Camera &cam)
 {
@@ -287,6 +263,7 @@ void BSP::render_leaf_node_tris(const MapEntity &parent, Frame &frame,
                                 std::span<const Texture> texs,
                                 isize_t &cur_sort_key)
 {
+    this->leaf_info().rendered = true;
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
     for (auto &tri : this->leaf_info().edge_tris) {
@@ -322,14 +299,14 @@ void BSP::render(const MapEntity &parent, Frame &frame, const Camera &cam,
 {
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
-    if (do_frustum_culling &&
-        !rel_cam.get_frustum().maybe_partially_contains(this->b_box)) {
-        return;
-    }
-
     if (this->is_leaf()) {
         if (render_innodes)
             this->render_leaf_node_tris(parent, frame, cam, texs, cur_sort_key);
+        return;
+    }
+
+    if (do_frustum_culling &&
+        !rel_cam.get_frustum().maybe_partially_contains(this->b_box)) {
         return;
     }
 
@@ -542,24 +519,28 @@ const BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent) const
     return this->get_point_node(point, parent.get_inv_transform());
 }
 
-void BSP::reset_sort_keys()
+void BSP::new_frame()
 {
-    if (this->is_leaf())
-        return;
+    if (this->is_leaf()) {
+        this->leaf_info().rendered = false;
+    } else {
+        for (auto &tri : this->innode_info().tris) {
+            tri.sort_key = -1;
+        }
 
-    for (auto &tri : this->innode_info().tris) {
-        tri.sort_key = -1;
+        if (this->behind)
+            this->behind->new_frame();
+        if (this->in_front)
+            this->in_front->new_frame();
     }
-
-    if (this->behind)
-        this->behind->reset_sort_keys();
-    if (this->in_front)
-        this->in_front->reset_sort_keys();
 }
 
 void BSP::create_portals()
 {
     assert(this->is_leaf());
+    // solid nodes don't have leaves
+    if (this->leaf_info().edge_tris.empty())
+        return;
 
     for (const auto &poly : this->shape.polys) {
         this->leaf_info().portals.emplace_back(poly, this, nullptr);
@@ -876,7 +857,10 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
         return;
     }
 
-    this->root->reset_sort_keys();
+    Camera rel_cam = cam;
+    rel_cam.pos = parent.get_inv_transform() * Vec4(cam.pos, 1.f);
+
+    this->root->new_frame();
 
     std::stack<BSP *> nodes;
     std::vector<const BSP *> visited;
@@ -884,17 +868,28 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     nodes.push(&this->root->get_point_node(cam.pos, parent));
     visited.push_back(nodes.top());
 
-    // 6884
-
     isize_t key = 0;
     while (!nodes.empty()) {
         auto &cur = *nodes.top();
         nodes.pop();
         assert(cur.is_leaf());
+
+        if (cur.leaf_info().rendered ||
+            !rel_cam.get_frustum().maybe_partially_contains(cur.b_box))
+            continue;
+
         cur.render(parent, frame, cam, texs, key);
 
         for (auto portal = cur.leaf_info().portals.begin();
              portal < cur.leaf_info().portals.end(); ++portal) {
+            if (portal->shape.get_plane().is_point_in_front(rel_cam.pos))
+                continue;
+            /*
+            if (!poly_visible(portal->shape, parent.get_transform(), frame,
+                              cam))
+                continue;
+                */
+
             assert(portal->in_front);
             BSP &other = *portal->in_front;
             assert(&other != &cur);
@@ -903,18 +898,14 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
                 continue;
             }
 
-            /*
-            if (!poly_visible(portal->shape, parent.get_transform(), frame,
-                              cam))
-                continue;
-                */
-
             nodes.push(&other);
             visited.push_back(&other);
         }
 
         ++key;
     }
+
+    std::cout << "rendered " << key << "/" << this->leaves.size() << " nodes\n";
 }
 
 isize_t BSPTree::leaf_idx(const BSP &leaf) const

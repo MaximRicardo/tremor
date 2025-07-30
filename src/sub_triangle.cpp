@@ -202,6 +202,7 @@ void SubTriangle::render(Frame &frame, std::span<const Texture> texs) const
 
 bool SubTriangle::is_visible(const Frame &frame) const
 {
+    assert(!RSpan::enabled);
     TriangleLines lines = get_triangle_edge_list(this->screen_vs);
 
     for (size_t i = 0; i < lines.n_lines; i++) {
@@ -212,9 +213,8 @@ bool SubTriangle::is_visible(const Frame &frame) const
         int32_t clpd_min = std::max(lines.lines[i].min_x, 0);
         int32_t clpd_max = std::min(lines.lines[i].max_x, Res::width - 1);
 
-        assert(!RSpan::enabled);
-        if (RenderPixels::horizontal_line_visible(y, clpd_min, clpd_max - 1,
-                                                  frame, *this))
+        if (RenderPixels::horizontal_line_visible(y, clpd_min, clpd_max, frame,
+                                                  *this))
             return true;
     }
 
