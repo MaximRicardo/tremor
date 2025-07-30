@@ -142,8 +142,32 @@ bool Triangle::intersects(const Plane &plane) const
     return v0 != v1 || v0 != v2;
 }
 
-bool Triangle::is_on(const Plane &plane) const
+bool Triangle::is_on(const Plane &plane, float epsilon) const
 {
-    return plane.is_point_on(this->vs[0]) && plane.is_point_on(this->vs[1]) &&
-           plane.is_point_on(this->vs[2]);
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_on(v, epsilon))
+            return false;
+    }
+
+    return true;
+}
+
+bool Triangle::is_behind(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_behind(v))
+            return false;
+    }
+
+    return true;
+}
+
+bool Triangle::is_in_front(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_in_front(v))
+            return false;
+    }
+
+    return true;
 }

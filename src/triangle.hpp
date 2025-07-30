@@ -1,5 +1,6 @@
 #pragma once
 
+#include "constants.hpp"
 #include "frame.hpp"
 #include "mat4x4.hpp"
 #include "ssize.hpp"
@@ -52,5 +53,7 @@ public:
     float get_area() const;
     bool is_degenerate() const;
     bool intersects(const Plane &plane) const;
-    bool is_on(const Plane &plane) const;
+    bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
+    bool is_behind(const Plane &plane) const;
+    bool is_in_front(const Plane &plane) const;
 };

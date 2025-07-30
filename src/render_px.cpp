@@ -1,8 +1,12 @@
 #include "render_px.hpp"
+#include "camera.hpp"
+#include "constants.hpp"
 #include "index.hpp"
 #include "palette.hpp"
 #include "resolution.hpp"
+#include "ssize.hpp"
 #include "sub_triangle.hpp"
+#include "transform.hpp"
 #include "triangle.hpp"
 #include "vector/vec2.hpp"
 #include "vector/vec3.hpp"
@@ -212,4 +216,32 @@ bool RenderPixels::horizontal_line_visible(int32_t y, int32_t x_0, int32_t x_1,
     }
 
     return false;
+}
+
+void RenderPixels::render_point(const Vec3 &p, Frame &frame, const Camera &cam,
+                                Color color, int32_t radius, bool ignore_depths)
+{
+    Vec3 cs = Transform::world_space_to_cam_space(p, cam);
+    if (cs.z < Consts::z_near)
+        return;
+
+    Vec2 nss = Transform::cam_space_to_norm_scr(cs, cam);
+    Vec2i ss = Transform::norm_scr_to_scr_space(nss);
+
+    // just draw a square for now
+    for (int32_t y = ss.y - radius; y < ss.y + radius; ++y) {
+        for (int32_t x = ss.x - radius; x < ss.x + radius; ++x) {
+            if (x < 0 || x >= Res::width)
+                return;
+            if (y < 0 || y >= Res::height)
+                return;
+
+            isize_t idx = Index::to_1d(Vec2i(x, y), Res::width);
+            if (!ignore_depth_buffer && !ignore_depths &&
+                frame.depths[idx] < cs.z)
+                return;
+            frame.depths[idx] = cs.z;
+            frame.pixels[idx] = color;
+        }
+    }
 }

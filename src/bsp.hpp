@@ -16,6 +16,8 @@
 class MapEntity;
 class BSPTree;
 
+inline bool render_portals = false;
+
 // a quake-style binary space partitioning tree.
 // TODO: make a seperate class for innodes and leaf nodes cuh
 class BSP {
@@ -134,6 +136,7 @@ class BSPTree {
 
     void merge_portals();
     void remove_useless_portals();
+    isize_t leaf_idx(const BSP &leaf) const;
 
 public:
     explicit BSPTree(std::span<const RenderPolygon> polys);

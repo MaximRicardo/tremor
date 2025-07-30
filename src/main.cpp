@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     Screen screen("Tremor");
 
     Map map;
-    std::filesystem::path map_path = "../maps/quake_test.map";
+    std::filesystem::path map_path = "../maps/e1m1.map";
 
     try {
         map = QuakeMapLoader::load_file(map_path);
@@ -100,6 +100,9 @@ int main(int argc, char *argv[])
         else if (Input::key_pressed_once(Input::Key::F, screen))
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
+
+        if (Input::key_pressed_once(Input::Key::SPACE, screen))
+            render_portals = !render_portals;
 
         std::cout << "rendering\n";
 
