@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polygon.hpp"
+#include <optional>
 
 class BSP;
 
@@ -18,6 +19,11 @@ public:
     static void merge(Portal &a, Portal &b);
     void merge_with(const Portal &other);
     bool are_tris_cached() const;
+
+    // quake-style portal visibility algorithm
+    // returns the clipped portal if it is visible
+    static std::optional<Polygon>
+    is_visible(const Polygon &start, const Portal &end, const Polygon &pass);
 };
 
 } // namespace PVS

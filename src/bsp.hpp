@@ -20,7 +20,7 @@ class BSPTree;
 // references to polygons which lie on their boundaries.
 // TODO:
 //    HEAVILY consider making a seperate class for leaf nodes and innodes.
-//    there ain't no way this on good design bruh.
+//    there ain't no way this is good design bruh.
 class BSP {
 
     // i honestly don't know if this is cursed or not, but it works
@@ -89,6 +89,10 @@ class BSP {
     void new_frame();
     void create_portals();
     void merge_portal(const PVS::Portal &p);
+    void find_pv_leaves();
+    // cur is the portal leading to the current node
+    void add_visibles(const PVS::Portal &cur, const Polygon &pass,
+                      const Polygon &start);
 
     explicit BSP(BSP *parent);
     // innode constructor
@@ -140,6 +144,8 @@ class BSPTree {
 
     void merge_portals();
     void remove_useless_portals();
+    void resize_portals();
+    void calc_pvs();
     isize_t leaf_idx(const BSP &leaf) const;
 
 public:
