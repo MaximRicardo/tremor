@@ -46,6 +46,10 @@ Polygon::Polygon(const RenderPolygon &other)
     }
 }
 
+Polygon::Polygon(const Triangle &tri)
+    : Polygon(std::array{tri.vs[0], tri.vs[1], tri.vs[2]})
+{}
+
 Vec3 Polygon::get_center() const
 {
     Vec3 c = Vec3::zero();
@@ -138,6 +142,8 @@ std::vector<Vec3> Polygon::get_intersections(const Plane &plane) const
 
 std::vector<Triangle> Polygon::get_triangles(bool cull_degenerates) const
 {
+    assert(this->vs.size() >= 3);
+
     std::vector<Triangle> tris;
 
     size_t anchor = 0;
@@ -242,6 +248,12 @@ bool Polygon::partially_contains(const Polygon &other) const
     }
 
     return true;
+}
+
+bool Polygon::partially_contains(const Triangle &tri) const
+{
+    return this->partially_contains(
+        Polygon(std::array{tri.vs[0], tri.vs[1], tri.vs[2]}));
 }
 
 bool Polygon::is_in_front_of(const Plane &plane) const

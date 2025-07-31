@@ -17,9 +17,6 @@ class RenderPolygon;
 // is assumed to be counter clockwise
 class Polygon {
 
-    // each plane points outwards from the center of the polygon
-    std::vector<Plane> side_planes() const;
-
 public:
     std::vector<Vec3> vs;
 
@@ -28,6 +25,7 @@ public:
     // automatically sorts vs ccw
     Polygon(std::span<const Vec3> vs, const Vec3 &normal);
     explicit Polygon(const RenderPolygon &other);
+    explicit Polygon(const Triangle &tri);
 
     Vec3 get_center() const;
     Plane get_plane() const;
@@ -42,9 +40,12 @@ public:
     bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
     float get_area() const;
     bool partially_contains(const Polygon &other) const;
+    bool partially_contains(const Triangle &other) const;
     bool is_in_front_of(const Plane &plane) const;
     bool is_behind(const Plane &plane) const;
     void flip_dir();
+    // each plane points outwards from the center of the polygon
+    std::vector<Plane> side_planes() const;
 };
 
 class RenderPolygon {

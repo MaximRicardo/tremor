@@ -24,14 +24,20 @@
 #include <variant>
 #include <vector>
 
+/*
+ * Beware, ye who enter here. This be a land of treacherous creatures, a land
+ * haunted by beasts. Though thine journeys far and experience wide, thou must
+ * travel with care through these lands, lest thou fucketh with the
+ * Rube-Goldeberg machine known as bsp.cpp!
+ */
+
 namespace {
 
 constexpr float split_plane_epsilon = 0.0001f;
 constexpr float portal_width_epsilon = 0.1f;
 constexpr float min_poly_area = 0.f;
 // if a portal is bigger than this, just assume it's visible cuz checking if it
-// isn't will take way too fucking long. idek why some portals are somehow
-// over 100 million units large but whatever ig.
+// isn't will take way too long.
 constexpr float max_portal_cull_area = 10000.f;
 constexpr float max_portal_area = 1000000.f;
 constexpr isize_t max_node_render_depth = 100;
@@ -115,6 +121,20 @@ bool poly_is_visible(const Polygon &poly, const Matrix4x4 &transform,
     }
 
     return false;
+}
+
+// clips poly to the part inside base
+std::optional<Polygon> clip_to_inside(Polygon poly, const Polygon &base)
+{
+    for (const auto &p : base.side_planes()) {
+        if (poly.empty())
+            return {};
+        poly.clip(p.flipped());
+    }
+
+    if (poly.empty())
+        return {};
+    return poly;
 }
 
 } // namespace
@@ -553,6 +573,17 @@ void BSP::create_portals()
 
     for (const auto &poly : this->shape.polys) {
         if (poly.get_area() > max_portal_area)
+            continue;
+
+        float tris_area = 0.f;
+        for (const auto &tri : this->leaf_info().edge_tris) {
+            if (!poly.partially_contains(*tri))
+                continue;
+            if (auto clipped = clip_to_inside(Polygon(*tri), poly))
+                tris_area += clipped->get_area();
+        }
+
+        if (tris_area >= poly.get_area() - 16.f)
             continue;
 
         this->leaf_info().portals.emplace_back(poly, this, nullptr);
