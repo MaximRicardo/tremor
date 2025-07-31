@@ -29,3 +29,26 @@ public:
     void merge(const AABB &other);
     Vec3 get_center() const;
 };
+
+class AABB2D {
+
+public:
+    Vec2 min, max;
+
+    AABB2D() = default;
+    AABB2D(Vec2 min, Vec2 max);
+
+    // TODO: add functionality
+};
+
+class AABB2Di {
+
+public:
+    Vec2i min, max;
+
+    AABB2Di() = default;
+    AABB2Di(Vec2i min, Vec2i max);
+
+    // TODO: add more functionality
+    bool is_on_screen() const;
+};

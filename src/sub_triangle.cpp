@@ -5,6 +5,7 @@
 #include "render_px.hpp"
 #include "resolution.hpp"
 #include "rspan.hpp"
+#include "ssize.hpp"
 #include "texture.hpp"
 #include "triangle.hpp"
 #include <algorithm>
@@ -72,7 +73,7 @@ struct TriangleLines {
     // each element in starts and ends represents one scanline of the triangle,
     // starting from the top and ending at the bottom.
     std::array<Line1Di, Res::max_height> lines;
-    size_t n_lines;
+    isize_t n_lines;
     // how much to add to the index of a scanline to get its y coordinate in
     // screen-space.
     int32_t y_offset;
@@ -86,11 +87,10 @@ void set_tri_edge_list_via_line(Vec2i start, const Vec2i &end,
     int32_t dy = -abs(end.y - start.y), sy = start.y < end.y ? 1 : -1;
     int32_t err = dx + dy, e2; /* error value e_xy */
 
-    for (;;) { /* loop */
+    for (;;) {
+        isize_t idx = start.y - lines.y_offset;
 
-        size_t idx = start.y - lines.y_offset;
-
-        if (idx < lines.n_lines) {
+        if (idx < lines.n_lines && idx >= 0) {
             if (start.x < lines.lines[idx].min_x)
                 lines.lines[idx].min_x = start.x;
             if (start.x > lines.lines[idx].max_x)
@@ -130,7 +130,7 @@ TriangleLines get_triangle_edge_list(const std::array<Vec2i, 3> &vs)
     lines.n_lines = y_max - y_min + 1;
     assert(lines.n_lines <= Res::max_height);
 
-    for (size_t i = 0; i < lines.n_lines; ++i) {
+    for (isize_t i = 0; i < lines.n_lines; ++i) {
         lines.lines[i].min_x = std::numeric_limits<int32_t>::max();
         lines.lines[i].max_x = std::numeric_limits<int32_t>::lowest();
     }
@@ -182,8 +182,11 @@ void SubTriangle::render(Frame &frame, std::span<const Texture> texs) const
 {
     TriangleLines lines = get_triangle_edge_list(this->screen_vs);
 
-    for (size_t i = 0; i < lines.n_lines; i++) {
+    isize_t start_i = lines.y_offset >= 0 ? 0 : -lines.y_offset;
+    for (isize_t i = start_i; i < lines.n_lines; i++) {
         int32_t y = i + lines.y_offset;
+        if (y >= Res::height)
+            break;
 
         if (lines.lines[i].max_x < 0 || lines.lines[i].min_x >= Res::width)
             continue;
@@ -205,8 +208,14 @@ bool SubTriangle::is_visible(const Frame &frame) const
     assert(!RSpan::enabled);
     TriangleLines lines = get_triangle_edge_list(this->screen_vs);
 
-    for (size_t i = 0; i < lines.n_lines; i++) {
+    if (!this->get_scr_box().is_on_screen())
+        return false;
+
+    isize_t start_i = lines.y_offset >= 0 ? 0 : -lines.y_offset;
+    for (isize_t i = start_i; i < lines.n_lines; i++) {
         int32_t y = i + lines.y_offset;
+        if (y >= Res::height)
+            break;
 
         if (lines.lines[i].max_x < 0 || lines.lines[i].min_x >= Res::width)
             continue;
@@ -224,4 +233,19 @@ bool SubTriangle::is_visible(const Frame &frame) const
 float SubTriangle::tex_space_area() const
 {
     return tri_2d_area(this->vts);
+}
+
+AABB2Di SubTriangle::get_scr_box() const
+{
+    int32_t min_x = std::min(
+        {this->screen_vs[0].x, this->screen_vs[1].x, this->screen_vs[2].x});
+    int32_t min_y = std::min(
+        {this->screen_vs[0].y, this->screen_vs[1].y, this->screen_vs[2].y});
+
+    int32_t max_x = std::max(
+        {this->screen_vs[0].x, this->screen_vs[1].x, this->screen_vs[2].x});
+    int32_t max_y = std::max(
+        {this->screen_vs[0].y, this->screen_vs[1].y, this->screen_vs[2].y});
+
+    return AABB2Di(Vec2i(min_x, min_y), Vec2i(max_x, max_y));
 }

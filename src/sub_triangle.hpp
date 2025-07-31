@@ -9,6 +9,7 @@
 
 class Triangle;
 class Camera;
+class AABB2Di;
 
 // used exclusively for rendering.
 // when a triangle is clipped with the near plane, 0-2 instances of SubTriangle
@@ -35,6 +36,7 @@ public:
     bool is_visible(const Frame &frame) const;
     // goes up to 1 for the whole texture
     float tex_space_area() const;
+    AABB2Di get_scr_box() const;
 
     friend Triangle;
 };

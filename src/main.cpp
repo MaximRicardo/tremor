@@ -86,13 +86,6 @@ int main(int argc, char *argv[])
 
         frame.clear();
 
-        /*
-        std::cout << "delta_time = " << delta_time << '\n';
-        std::cout << "fps = " << 1.f / delta_time << '\n';
-        bool cam_in_solid = worldspawn.bsp->point_in_solid(cam.pos, worldspawn);
-        std::cout << "cam in solid = " << cam_in_solid << '\n';
-        */
-
         cam.handle_input(delta_time, screen);
         if (Input::key_pressed_once(Input::Key::R, screen))
             resize_window(320, 200, Res::upscaled_width, Res::upscaled_height,
@@ -100,9 +93,6 @@ int main(int argc, char *argv[])
         else if (Input::key_pressed_once(Input::Key::F, screen))
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
-
-        if (Input::key_pressed_once(Input::Key::SPACE, screen))
-            render_portals = !render_portals;
 
         std::cout << "rendering\n";
 

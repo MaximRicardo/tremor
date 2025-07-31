@@ -16,15 +16,16 @@
 class MapEntity;
 class BSPTree;
 
-inline bool render_portals = false;
-
-// a quake-style binary space partitioning tree.
-// TODO: make a seperate class for innodes and leaf nodes cuh
+// a quake-style BSP, with polygons stored on innodes, and leaf nodes holding
+// references to polygons which lie on their boundaries.
+// TODO:
+//    HEAVILY consider making a seperate class for leaf nodes and innodes.
+//    there ain't no way this on good design bruh.
 class BSP {
 
-    struct LeafInfo {
-        // is the current node in empty space or solid space?
-        bool empty;
+    // i honestly don't know if this is cursed or not, but it works
+    class LeafInfo {
+    public:
         // triangles lying on the edge of the node's hull.
         std::vector<Triangle *> edge_tris;
         bool rendered = false;
@@ -32,9 +33,12 @@ class BSP {
         // these are used for PVS
         std::vector<BSP *> pv_leaves;
         std::vector<PVS::Portal> portals;
+
+        bool solid() const;
     };
 
-    struct InNodeInfo {
+    class InNodeInfo {
+    public:
         Plane plane;
         // triangles which are coplanar with plane
         std::vector<Triangle> tris;
@@ -85,7 +89,6 @@ class BSP {
     void new_frame();
     void create_portals();
     void merge_portal(const PVS::Portal &p);
-    static void merge_portals(BSP &a, BSP &b);
 
     explicit BSP(BSP *parent);
     // innode constructor

@@ -1,6 +1,7 @@
 #include "aabb.hpp"
 #include "constants.hpp"
 #include "line.hpp"
+#include "resolution.hpp"
 #include "vector/vec3.hpp"
 #include <algorithm>
 #include <array>
@@ -143,4 +144,15 @@ void AABB::merge(const AABB &other)
 Vec3 AABB::get_center() const
 {
     return this->min.mix(this->max, 0.5f);
+}
+
+AABB2D::AABB2D(Vec2 min, Vec2 max) : min(min), max(max) {}
+
+AABB2Di::AABB2Di(Vec2i min, Vec2i max) : min(min), max(max) {}
+
+bool AABB2Di::is_on_screen() const
+{
+    bool x_off = this->max.x < 0 || this->min.x >= Res::width;
+    bool y_off = this->max.y < 0 || this->min.y >= Res::height;
+    return !x_off && !y_off;
 }

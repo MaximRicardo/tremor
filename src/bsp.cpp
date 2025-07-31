@@ -31,8 +31,9 @@ constexpr float min_poly_area = 0.f;
 constexpr bool do_frustum_culling = false;
 // if false, the polygons in each leaf_info().edge_tris will be rendered instead
 // of the polygons in each innode_info().tris.
+// FIXME: do i even need this still?
 constexpr bool render_innodes = true;
-// constexpr bool render_portals = true;
+constexpr bool render_portals = false;
 constexpr bool optimize_tree = false;
 
 Camera get_rel_cam(const Camera &cam, const Matrix4x4 &inv_transform)
@@ -98,22 +99,12 @@ sort_by_score(std::span<const RenderPolygon> polys)
     return sorted;
 }
 
-/*
-bool poly_visible(const Polygon &poly, const Matrix4x4 &transform,
-                  const Frame &frame, const Camera &cam)
-{
-    auto tris = poly.get_triangles();
-
-    for (const auto &tri : tris) {
-        if (tri.is_visible(transform, frame, cam))
-            return true;
-    }
-
-    return false;
-}
-*/
-
 } // namespace
+
+bool BSP::LeafInfo::solid() const
+{
+    return this->edge_tris.empty();
+}
 
 BSP::BSP(BSP *parent) : parent(parent) {}
 
@@ -286,7 +277,7 @@ void BSP::render_leaf_portals(const MapEntity &parent, Frame &frame,
 {
     if (render_portals) {
         for (const auto &portal : this->leaf_info().portals) {
-            auto tris = portal.shape.get_triangles();
+            auto tris = portal.get_triangles();
             for (const auto &tri : tris) {
                 tri.render(parent.get_transform(), frame, cam, texs);
             }
@@ -402,10 +393,6 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
     // bool is_behind = this == this->parent->behind.get();
 
     this->info = std::make_unique<LeafInfo>();
-
-    // leaf nodes behind their parent are always in solid space, while ones
-    // in front of their parents are always in empty space
-    this->leaf_info().empty = this->parent->behind.get() != this;
 
     for (auto tri : tris) {
         bool add = false;
@@ -558,7 +545,7 @@ void BSP::merge_portal(const PVS::Portal &other)
     for (isize_t i = 0; i < old_n; ++i) {
         if (portals[i].in_front)
             continue;
-        else if (!portals[i].shape.partially_contains(other.shape))
+        else if (!portals[i].get_shape().partially_contains(other.get_shape()))
             continue;
 
         PVS::Portal new_p = portals[i];
@@ -569,56 +556,6 @@ void BSP::merge_portal(const PVS::Portal &other)
 
     (void)merged;
     // assert(merged);
-}
-
-void BSP::merge_portals(BSP &a, BSP &b)
-{
-    assert(&a != &b);
-    if (!a.leaf_info().empty || !b.leaf_info().empty)
-        return;
-
-    std::vector<Polygon> new_portals;
-
-    for (auto &a_portal : a.leaf_info().portals) {
-        if (a_portal.in_front) {
-            continue;
-        } else if (a_portal.shape.get_area() < Consts::epsilon)
-            continue;
-
-        for (auto &b_portal : b.leaf_info().portals) {
-            if (b_portal.in_front)
-                continue;
-            else if (b_portal.shape.get_area() < Consts::epsilon)
-                continue;
-            else if (!a_portal.shape.partially_contains(b_portal.shape)) {
-                auto a_plane = a_portal.shape.get_plane();
-                auto b_plane = b_portal.shape.get_plane();
-                std::cout << "a_portal = [" << a_portal.shape << "]\n";
-                std::cout << "a normal = (" << a_plane.normal
-                          << "), d = " << a_plane.d << "\n";
-                std::cout << "b_portal = [" << b_portal.shape << "]\n";
-                std::cout << "b normal = (" << b_plane.normal
-                          << "), d = " << b_plane.d << "\n";
-                continue;
-            }
-
-            new_portals.emplace_back(a_portal.shape.get_area() <
-                                             b_portal.shape.get_area()
-                                         ? a_portal.shape
-                                         : b_portal.shape);
-        }
-    }
-
-    for (const auto &shape : new_portals) {
-        a.leaf_info().portals.emplace_back(shape, &a, &b);
-        b.leaf_info().portals.emplace_back(shape, &b, &a);
-
-        bool a_behind = shape.get_plane().is_point_behind(a.b_box.get_center());
-        if (a_behind)
-            b.leaf_info().portals.back().shape.flip_dir();
-        else
-            a.leaf_info().portals.back().shape.flip_dir();
-    }
 }
 
 BSP &BSP::get_point_node(const Vec3 &point, const MapEntity &parent)
@@ -634,7 +571,7 @@ bool BSP::point_in_solid(const Vec3 &point, const MapEntity &parent) const
     bool inside =
         p_node.shape.contains(parent.get_inv_transform() * Vec4(point, 1.f));
     assert(inside);
-    return !p_node.leaf_info().empty;
+    return p_node.leaf_info().solid();
 }
 
 const BSP *BSP::get_plane_node(const Plane &plane) const
@@ -801,7 +738,7 @@ void BSPTree::merge_portals()
             if (portals[i].in_front)
                 continue;
 
-            auto p_plane = portals[i].shape.get_plane();
+            auto p_plane = portals[i].get_shape().get_plane();
 
             BSP *plane_parent = this->root->get_plane_node(p_plane);
             if (!plane_parent)
@@ -813,7 +750,7 @@ void BSPTree::merge_portals()
                                 p_plane.normal) < 0.f;
                                 */
 
-            Vec3 center = portals[i].shape.get_center();
+            Vec3 center = portals[i].get_shape().get_center();
             /*
             // the node on the opposite side of the portal
             BSP &front =
@@ -821,11 +758,11 @@ void BSPTree::merge_portals()
                     .closest_node(center);
             */
             auto &b = this->root->get_point_node(
-                center +
-                    portals[i].shape.get_plane().normal * portal_width_epsilon,
+                center + portals[i].get_shape().get_plane().normal *
+                             portal_width_epsilon,
                 Matrix4x4::identity());
             b.merge_portal(portals[i]);
-            portals.emplace_back(portals[i].shape, leaf, &b);
+            portals.emplace_back(portals[i].get_shape(), leaf, &b);
             /*
             std::cout << "leaf center = " << leaf->shape.get_center() << "\n";
             std::cout << "leaf min = (" << leaf->b_box.min << "), max = ("
@@ -882,11 +819,10 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
 
         for (auto portal = cur.leaf_info().portals.begin();
              portal < cur.leaf_info().portals.end(); ++portal) {
-            if (portal->shape.get_plane().is_point_in_front(rel_cam.pos))
+            if (portal->get_shape().get_plane().is_point_in_front(rel_cam.pos))
                 continue;
             /*
-            if (!poly_visible(portal->shape, parent.get_transform(), frame,
-                              cam))
+            if (!portal->is_visible(parent.get_transform(), frame, cam))
                 continue;
                 */
 
