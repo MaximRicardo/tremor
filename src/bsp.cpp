@@ -432,7 +432,13 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 
     this->info = std::make_unique<LeafInfo>();
 
-    bool is_solid = this == this->parent->behind.get();
+    bool is_solid = true;
+    for (const auto &tri : this->parent->innode_info().tris) {
+        if (tri.get_plane().is_point_in_front(this->shape.get_center())) {
+            is_solid = false;
+            break;
+        }
+    }
 
     if (!is_solid) {
         for (auto tri : tris) {
@@ -856,8 +862,9 @@ void BSPTree::merge_portals()
 void BSPTree::remove_useless_portals()
 {
     for (auto &leaf : this->leaves) {
-        std::erase_if(leaf->leaf_info().portals,
-                      [](const auto &portal) { return !portal.in_front; });
+        std::erase_if(leaf->leaf_info().portals, [](const auto &portal) {
+            return !portal.in_front || portal.in_front->leaf_info().solid();
+        });
     }
 }
 
