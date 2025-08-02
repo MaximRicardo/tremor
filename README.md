@@ -13,6 +13,16 @@ renderer.
 The code is designed to be easy to port to any platform and be pretty much
 dependency free.
 
+## Features
+
+Loading in .map and .wad (the wad2 format specifically) files and compiling them
+to a BSP tree.
+
+### NOTE
+Textures are slightly bugged for .map files, and very bugged for valve220 format
+.map files. This will be fixed eventually but currently getting the BSP working
+bug-free is my priority.
+
 ## Dependencies
 
 Raylib is used as a pass-through to put pixels onto the screen as well as
