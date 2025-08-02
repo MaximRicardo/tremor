@@ -15,8 +15,9 @@ dependency free.
 
 ## Features
 
-Loading in .map and .wad (the wad2 format specifically) files and compiling them
-to a BSP tree.
+*   Loading in .map and .wad (the wad2 format specifically) files and compiling them
+    to a BSP tree.
+*   Rendering BSP trees with portal-based occlusion culling.
 
 ### NOTE
 Textures are slightly bugged for .map files, and very bugged for valve220 format
