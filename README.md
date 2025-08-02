@@ -7,7 +7,7 @@ renderer.
   <img
   src="./thumbnail.png"
   alt="Demo of the WIP Renderer on Quake's E1M1">
-  <figcaption>MDN Logo</figcaption>
+  <figcaption>Demo of Quake E1M1</figcaption>
 </figure>
 
 The code is designed to be easy to port to any platform and be pretty much
