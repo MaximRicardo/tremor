@@ -62,14 +62,18 @@ public:
     // can not and does not sort vs ccw
     RenderPolygon(std::span<const Vec3> vs, std::span<const Vec2> vts,
                   size_t tex_idx);
+    RenderPolygon(std::span<const TexVert> vs, size_t tex_idx);
     // automatically sorts vs ccw
     RenderPolygon(std::span<const Vec3> vs, std::span<const Vec2> vts,
                   size_t tex_idx, const Vec3 &normal);
+    RenderPolygon(std::span<const TexVert> vs, size_t tex_idx,
+                  const Vec3 &normal);
 
     Vec3 get_center() const;
     Plane get_plane() const;
     void sort_vs_ccw(const Vec3 &intended_normal);
     void clip(const Plane &plane);
+    std::vector<TexVert> get_intersections(const Plane &plane) const;
     void render(const Matrix4x4 &transform, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs) const;
     void apply_transform(const Matrix4x4 &mat);
@@ -81,3 +85,4 @@ public:
 };
 
 std::ostream &operator<<(std::ostream &os, const Polygon &poly);
+std::ostream &operator<<(std::ostream &os, const RenderPolygon &poly);

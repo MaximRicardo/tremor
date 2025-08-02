@@ -1,12 +1,12 @@
 #include "map.hpp"
-#include "polygon.hpp"
+#include "shape.hpp"
 #include <string>
 #include <string_view>
 #include <utility>
 
-MapEntity::MapEntity(std::span<const RenderPolygon> polys, Vec3 pos,
+MapEntity::MapEntity(std::span<const BrushShape> brushes, Vec3 pos,
                      std::string_view name)
-    : bsp(polys.empty() ? nullptr : new BSPTree(polys)), pos(pos),
+    : bsp(brushes.empty() ? nullptr : new BSPTree(brushes)), pos(pos),
       name(std::string(name))
 {}
 

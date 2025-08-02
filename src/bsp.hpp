@@ -16,6 +16,8 @@
 class MapEntity;
 class BSPTree;
 
+inline bool render_portals = false;
+
 // a quake-style BSP, with polygons stored on innodes, and leaf nodes holding
 // references to polygons which lie on their boundaries.
 // TODO:
@@ -42,6 +44,9 @@ class BSP {
         Plane plane;
         // triangles which are coplanar with plane
         std::vector<Triangle> tris;
+        isize_t brush_id; // the id of the brush the first triangle in tris came
+                          // from. can be any number so long as it is unique for
+                          // every brush.
     };
 
     AABB b_box;
@@ -65,9 +70,9 @@ class BSP {
 
     // doesn't physically put triangles into the tree, instead uses the provided
     // triangles' planes to create the structure of the tree
-    void insert_poly_behind(const RenderPolygon &poly);
-    void insert_poly_in_front(const RenderPolygon &poly);
-    void insert(const RenderPolygon &poly);
+    void insert_poly_behind(const RenderPolygon &poly, isize_t brush_id);
+    void insert_poly_in_front(const RenderPolygon &poly, isize_t brush_id);
+    void insert(const RenderPolygon &poly, isize_t brush_id);
 
     void render_innode_tris(const MapEntity &parent, Frame &frame,
                             const Camera &cam, std::span<const Texture> texs,
@@ -96,7 +101,8 @@ class BSP {
 
     explicit BSP(BSP *parent);
     // innode constructor
-    BSP(const Plane &plane, std::span<const Triangle> tris, BSP *parent);
+    BSP(const Plane &plane, std::span<const Triangle> tris, isize_t brush_id,
+        BSP *parent);
 
 public:
     // these nodes contain the child tris behind and in front of this
@@ -104,7 +110,7 @@ public:
     std::unique_ptr<BSP> in_front = nullptr;
     BSP *parent = nullptr;
 
-    explicit BSP(std::span<const RenderPolygon> polys, BSPTree &parent);
+    explicit BSP(std::span<const BrushShape> brushes, BSPTree &parent);
 
     void render(const MapEntity &parent, Frame &frame, const Camera &cam,
                 std::span<const Texture> texs);
@@ -149,7 +155,7 @@ class BSPTree {
     isize_t leaf_idx(const BSP &leaf) const;
 
 public:
-    explicit BSPTree(std::span<const RenderPolygon> polys);
+    explicit BSPTree(std::span<const BrushShape> polys);
 
     const BSP &get_root() const;
     BSP &get_root();

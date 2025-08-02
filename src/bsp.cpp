@@ -12,7 +12,6 @@
 #include "triangle.hpp"
 #include <algorithm>
 #include <cassert>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -33,7 +32,7 @@
 
 namespace {
 
-constexpr float split_plane_epsilon = 0.0001f;
+constexpr float split_plane_epsilon = 0.05f;
 constexpr float portal_width_epsilon = 0.1f;
 constexpr float min_poly_area = 0.f;
 // if a portal is bigger than this, just assume it's visible cuz checking if it
@@ -42,12 +41,13 @@ constexpr float max_portal_cull_area = 10000.f;
 constexpr float max_portal_area = 1000000.f;
 constexpr isize_t max_node_render_depth = 100;
 constexpr bool do_frustum_culling = false;
-// if false, the polygons in each leaf_info().edge_tris will be rendered instead
-// of the polygons in each innode_info().tris.
-// FIXME: do i even need this still?
+constexpr bool do_backface_culling = true;
+// if false, the polygons in each innode_info().tris will be rendered instead
+// of the polygons in each leaf_info().edge_tris. mostly just for
+// debugging.
 constexpr bool render_innodes = true;
-constexpr bool render_portals = false;
-constexpr bool optimize_tree = false;
+// constexpr bool render_portals = false;
+// constexpr bool optimize_tree = false;
 
 Camera get_rel_cam(const Camera &cam, const Matrix4x4 &inv_transform)
 {
@@ -56,6 +56,7 @@ Camera get_rel_cam(const Camera &cam, const Matrix4x4 &inv_transform)
     return rel_cam;
 }
 
+#if 0
 int32_t n_polys_clipped(isize_t poly, std::span<const RenderPolygon> polys,
                         isize_t start)
 {
@@ -111,6 +112,7 @@ sort_by_score(std::span<const RenderPolygon> polys)
 
     return sorted;
 }
+#endif
 
 bool poly_is_visible(const Polygon &poly, const Matrix4x4 &transform,
                      const Frame &frame, const Camera &cam)
@@ -124,6 +126,7 @@ bool poly_is_visible(const Polygon &poly, const Matrix4x4 &transform,
 }
 
 // clips poly to the part inside base
+/*
 std::optional<Polygon> clip_to_inside(Polygon poly, const Polygon &base)
 {
     for (const auto &p : base.side_planes()) {
@@ -135,7 +138,7 @@ std::optional<Polygon> clip_to_inside(Polygon poly, const Polygon &base)
     if (poly.empty())
         return {};
     return poly;
-}
+}*/
 
 } // namespace
 
@@ -146,33 +149,35 @@ bool BSP::LeafInfo::solid() const
 
 BSP::BSP(BSP *parent) : parent(parent) {}
 
-BSP::BSP(const Plane &plane, std::span<const Triangle> tris, BSP *parent)
+BSP::BSP(const Plane &plane, std::span<const Triangle> tris, isize_t brush_id,
+         BSP *parent)
     : parent(parent)
 {
     this->info = std::make_unique<InNodeInfo>();
 
     this->innode_info().plane = plane;
     this->innode_info().tris.assign(tris.begin(), tris.end());
+    this->innode_info().brush_id = brush_id;
 }
 
-BSP::BSP(std::span<const RenderPolygon> og_polys, BSPTree &parent)
+BSP::BSP(std::span<const BrushShape> brushes, BSPTree &parent)
 {
-    assert(og_polys.size() > 0);
+    assert(brushes.size() > 0);
 
     std::cout << "constructing bsp\n";
 
+    /*
     auto sorted = sort_by_score(og_polys);
     std::cout << "done sorting\n";
+    */
 
     this->info = std::make_unique<InNodeInfo>();
-    this->innode_info().plane = sorted[0]->get_plane();
+    this->innode_info().plane = brushes.front().polys.front().get_plane();
 
-    std::vector<RenderPolygon> others;
-    for (const auto &poly : sorted)
-        others.push_back(*poly);
-
-    for (const auto &poly : others) {
-        this->insert(poly);
+    for (auto brush = brushes.begin(); brush < brushes.end(); ++brush) {
+        for (const auto &poly : brush->polys) {
+            this->insert(poly, std::distance(brushes.begin(), brush));
+        }
     }
 
     // a seperate pass is required to allocate all the leaf nodes once we know
@@ -215,7 +220,7 @@ BSP::LeafInfo &BSP::leaf_info()
     return const_cast<LeafInfo &>(std::as_const(*this).leaf_info());
 }
 
-void BSP::insert_poly_behind(const RenderPolygon &poly)
+void BSP::insert_poly_behind(const RenderPolygon &poly, isize_t brush_id)
 {
     auto behind_poly = poly;
     behind_poly.clip(Plane(-this->innode_info().plane.normal,
@@ -229,14 +234,19 @@ void BSP::insert_poly_behind(const RenderPolygon &poly)
         return;
 
     if (!this->behind) {
-        this->behind = std::unique_ptr<BSP>(new BSP(
-            behind_poly.get_plane(), behind_poly.get_triangles(), this));
+        // only insert the polygon if it's not going into a different brush's
+        // solid space.
+        if (this->innode_info().brush_id == brush_id) {
+            this->behind = std::unique_ptr<BSP>(
+                new BSP(behind_poly.get_plane(), behind_poly.get_triangles(),
+                        brush_id, this));
+        }
     } else {
-        this->behind->insert(behind_poly);
+        this->behind->insert(behind_poly, brush_id);
     }
 }
 
-void BSP::insert_poly_in_front(const RenderPolygon &poly)
+void BSP::insert_poly_in_front(const RenderPolygon &poly, isize_t brush_id)
 {
     auto in_front_poly = poly;
     in_front_poly.clip(
@@ -252,20 +262,20 @@ void BSP::insert_poly_in_front(const RenderPolygon &poly)
 
     if (!this->in_front) {
         this->in_front = std::unique_ptr<BSP>(
-            new BSP(poly.get_plane(), poly.get_triangles(), this));
+            new BSP(poly.get_plane(), poly.get_triangles(), brush_id, this));
     } else {
-        this->in_front->insert(in_front_poly);
+        this->in_front->insert(in_front_poly, brush_id);
     }
 }
 
-void BSP::insert(const RenderPolygon &poly)
+void BSP::insert(const RenderPolygon &poly, isize_t brush_id)
 {
     if (poly.get_area() <= min_poly_area)
         return;
 
     if (!this->innode_info().plane.is_coplanar(poly.get_plane())) {
-        this->insert_poly_behind(poly);
-        this->insert_poly_in_front(poly);
+        this->insert_poly_behind(poly, brush_id);
+        this->insert_poly_in_front(poly, brush_id);
     } else {
         auto p_tris = poly.get_triangles();
         this->innode_info().tris.insert(this->innode_info().tris.end(),
@@ -280,7 +290,7 @@ void BSP::render_innode_tris(const MapEntity &parent, Frame &frame,
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
     for (auto &tri : this->innode_info().tris) {
-        if (tri.get_plane().is_point_behind(rel_cam.pos))
+        if (do_backface_culling && tri.get_plane().is_point_behind(rel_cam.pos))
             continue;
         tri.sort_key = cur_sort_key++;
         tri.render(parent.get_transform(), frame, cam, texs);
@@ -296,7 +306,8 @@ void BSP::render_leaf_node_tris(const MapEntity &parent, Frame &frame,
     Camera rel_cam = get_rel_cam(cam, parent.get_inv_transform());
 
     for (auto &tri : this->leaf_info().edge_tris) {
-        if (tri->get_plane().is_point_behind(rel_cam.pos))
+        if (do_backface_culling &&
+            tri->get_plane().is_point_behind(rel_cam.pos))
             continue;
         // tri was already rendered in front of its current position
         if (tri->sort_key >= 0 && tri->sort_key < cur_sort_key)
@@ -428,24 +439,17 @@ void BSP::alloc_leaf_nodes(BSPTree &parent)
 
 void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 {
-    // bool is_behind = this == this->parent->behind.get();
-
     this->info = std::make_unique<LeafInfo>();
 
-    bool is_solid = true;
-    for (const auto &tri : this->parent->innode_info().tris) {
-        if (tri.get_plane().is_point_in_front(this->shape.get_center())) {
-            is_solid = false;
-            break;
-        }
-    }
+    bool is_solid = this == this->parent->behind.get();
 
     if (!is_solid) {
         for (auto tri : tris) {
             bool add = false;
             for (const auto &poly : this->shape.polys) {
                 auto plane = poly.get_plane();
-                if (tri->is_on(plane)) {
+                if (tri->is_on(plane) && tri->get_plane().is_point_in_front(
+                                             this->shape.get_center())) {
                     add = true;
                 }
             }
@@ -581,6 +585,7 @@ void BSP::create_portals()
         if (poly.get_area() > max_portal_area)
             continue;
 
+        /*
         float tris_area = 0.f;
         for (const auto &tri : this->leaf_info().edge_tris) {
             if (!poly.partially_contains(*tri))
@@ -589,8 +594,10 @@ void BSP::create_portals()
                 tris_area += clipped->get_area();
         }
 
+
         if (tris_area >= poly.get_area() - 16.f)
             continue;
+        */
 
         this->leaf_info().portals.emplace_back(poly, this, nullptr);
     }
@@ -714,8 +721,8 @@ void BSP::add_visibles(const PVS::Portal &cur, const Polygon &pass,
     }
 }
 
-BSPTree::BSPTree(std::span<const RenderPolygon> polys)
-    : root(new BSP(polys, *this))
+BSPTree::BSPTree(std::span<const BrushShape> brushes)
+    : root(new BSP(brushes, *this))
 {
     this->merge_portals();
     this->remove_useless_portals();

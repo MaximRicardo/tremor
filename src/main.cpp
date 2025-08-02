@@ -94,6 +94,9 @@ int main(int argc, char *argv[])
             resize_window(160, 100, Res::upscaled_width, Res::upscaled_height,
                           screen, frame);
 
+        if (Input::key_pressed_once(Input::Key::SPACE, screen))
+            render_portals = !render_portals;
+
         std::cout << "rendering\n";
 
         if (render_bsp_tree) {

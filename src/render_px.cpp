@@ -20,6 +20,7 @@ namespace {
 
 // this will make entities render over each other in wonky ways.
 constexpr bool ignore_depth_buffer = false;
+constexpr float depth_epsilon = 1.f;
 
 // (u, v, w) are mapped to x, y, z
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
@@ -175,7 +176,7 @@ void RenderPixels::render_horizontal_line(int32_t y, int32_t x_0, int32_t x_1,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
-        if (!ignore_depth_buffer && frame.depths[idx] < z)
+        if (!ignore_depth_buffer && frame.depths[idx] < z + depth_epsilon)
             continue;
         frame.depths[idx] = z;
 
@@ -211,7 +212,7 @@ bool RenderPixels::horizontal_line_visible(int32_t y, int32_t x_0, int32_t x_1,
             tri.get_screen_vs()[2]);
 
         float z = interpolate_z(tri, bary_coords);
-        if (ignore_depth_buffer || z < frame.depths[idx])
+        if (ignore_depth_buffer || z + depth_epsilon < frame.depths[idx])
             return true;
     }
 
@@ -238,7 +239,7 @@ void RenderPixels::render_point(const Vec3 &p, Frame &frame, const Camera &cam,
 
             isize_t idx = Index::to_1d(Vec2i(x, y), Res::width);
             if (!ignore_depth_buffer && !ignore_depths &&
-                frame.depths[idx] < cs.z)
+                frame.depths[idx] < cs.z + depth_epsilon)
                 return;
             frame.depths[idx] = cs.z;
             frame.pixels[idx] = color;

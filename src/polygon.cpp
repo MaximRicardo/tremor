@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+// TODO: remove all the duplicate code
+
 namespace {
 
 Angle signed_angle_between(const Vec3 &v, const Vec3 &w, const Vec3 &normal)
@@ -27,6 +29,10 @@ Angle signed_angle_between(const Vec3 &v, const Vec3 &w, const Vec3 &normal)
 }
 
 } // namespace
+
+// ========================================================
+// Polygon
+// ========================================================
 
 Polygon::Polygon(std::span<const Vec3> vs)
 {
@@ -202,8 +208,6 @@ bool Polygon::is_on(const Plane &plane, float epsilon) const
 
 float Polygon::get_area() const
 {
-    // TODO: make this faster if needed
-
     auto tris = this->get_triangles();
 
     float area = 0.f;
@@ -281,6 +285,10 @@ void Polygon::flip_dir()
     std::reverse(this->vs.begin(), this->vs.end());
 }
 
+// ========================================================
+// RenderPolygon
+// ========================================================
+
 RenderPolygon::RenderPolygon(std::span<const Vec3> vs,
                              std::span<const Vec2> vts, size_t tex_idx)
 {
@@ -294,10 +302,28 @@ RenderPolygon::RenderPolygon(std::span<const Vec3> vs,
     }
 }
 
+RenderPolygon::RenderPolygon(std::span<const TexVert> vs, size_t tex_idx)
+{
+    assert(vs.size() >= 3);
+
+    this->tex_idx = tex_idx;
+
+    for (size_t i = 0; i < vs.size(); ++i) {
+        this->vs.push_back(vs[i]);
+    }
+}
+
 RenderPolygon::RenderPolygon(std::span<const Vec3> vs,
                              std::span<const Vec2> vts, size_t tex_idx,
                              const Vec3 &normal)
     : RenderPolygon(vs, vts, tex_idx)
+{
+    this->sort_vs_ccw(normal);
+}
+
+RenderPolygon::RenderPolygon(std::span<const TexVert> vs, size_t tex_idx,
+                             const Vec3 &normal)
+    : RenderPolygon(vs, tex_idx)
 {
     this->sort_vs_ccw(normal);
 }
@@ -373,6 +399,29 @@ void RenderPolygon::clip(const Plane &plane)
     this->vs = std::move(new_vs);
 }
 
+std::vector<TexVert> RenderPolygon::get_intersections(const Plane &plane) const
+{
+    std::vector<TexVert> intersections;
+
+    auto prev = this->vs.end() - 1;
+    for (auto v = this->vs.begin(); v < this->vs.end(); ++v) {
+        bool behind = plane.is_point_behind(v->v);
+        bool prev_behind = plane.is_point_behind(prev->v);
+
+        if (behind != prev_behind) {
+            Vec3 p;
+            float t;
+            std::tie(p, t) = plane.line_intersect_point(prev->v, v->v);
+            Vec2 p_tex = prev->vt.mix(v->vt, t);
+            intersections.emplace_back(p, p_tex);
+        }
+
+        prev = v;
+    }
+
+    return intersections;
+}
+
 std::vector<Vec2i> RenderPolygon::get_screen_vs(const Matrix4x4 &transform,
                                                 const Camera &cam) const
 {
@@ -437,8 +486,6 @@ bool RenderPolygon::invalid() const
 
 float RenderPolygon::get_area() const
 {
-    // TODO: make this faster if needed
-
     auto tris = this->get_triangles();
 
     float area = 0.f;

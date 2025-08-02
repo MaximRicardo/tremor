@@ -461,14 +461,13 @@ size_t Entity::get_info_idx(std::string_view key) const
 
 MapEntity Entity::to_map_entity(std::span<const Texture> textures) const
 {
-    std::vector<RenderPolygon> polys;
+    std::vector<BrushShape> shapes;
 
     for (const auto &brush : this->brushes) {
-        auto brush_polys = brush.get_polys(textures);
-        polys.insert(polys.end(), brush_polys.begin(), brush_polys.end());
+        shapes.emplace_back(brush.get_polys(textures));
     }
 
-    return MapEntity(polys, this->get_pos(), this->name);
+    return MapEntity(shapes, this->get_pos(), this->name);
 }
 
 // if the entity doesn't have an origin, the pos defaults to 0
