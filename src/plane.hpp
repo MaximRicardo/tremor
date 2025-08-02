@@ -39,7 +39,8 @@ public:
     // returns the part of the triangle vs that is in front of this.
     ClipTriangleRet clip(const Triangle &tri) const;
 
-    bool is_coplanar(const Plane &plane, float epsilon = Consts::epsilon) const;
+    bool is_coincident(const Plane &plane,
+                       float epsilon = Consts::epsilon) const;
     bool is_point_behind(const Vec3 &p) const;
     bool is_point_in_front(const Vec3 &p) const;
     bool is_point_on(const Vec3 &p, float epsilon = Consts::epsilon) const;

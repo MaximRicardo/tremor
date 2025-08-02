@@ -189,7 +189,7 @@ Plane::ClipTriangleRet Plane::clip(const Triangle &tri) const
     return ret;
 }
 
-bool Plane::is_coplanar(const Plane &plane, float epsilon) const
+bool Plane::is_coincident(const Plane &plane, float epsilon) const
 {
     return (this->normal.dot(plane.normal) > 1.f - epsilon &&
             std::abs(this->d - plane.d) <= epsilon) ||

@@ -16,25 +16,26 @@
 class MapEntity;
 class BSPTree;
 
+// temporarily at global scope to help with debugging portals
 inline bool render_portals = false;
 
 // a quake-style BSP, with polygons stored on innodes, and leaf nodes holding
 // references to polygons which lie on their boundaries.
-// TODO:
-//    HEAVILY consider making a seperate class for leaf nodes and innodes.
-//    there ain't no way this is good design bruh.
+// TODO: consider making a seperate class for leaf nodes and innodes.
 class BSP {
 
-    // i honestly don't know if this is cursed or not, but it works
     class LeafInfo {
     public:
         // triangles lying on the edge of the node's hull.
         std::vector<Triangle *> edge_tris;
         bool rendered = false;
 
-        // these are used for PVS
-        std::vector<BSP *> pv_leaves;
         std::vector<PVS::Portal> portals;
+
+        // CURRENTLY UNUSED! MIGHT BE USED IF I DECIDE TO GO WITH PRECALCULATED
+        // PVS INSTEAD OF RUNTIME CALCULATED PORTAL VISIBILITY!
+        // used for PVS.
+        std::vector<BSP *> pv_leaves;
 
         bool solid() const;
     };
@@ -45,10 +46,11 @@ class BSP {
         // triangles which are coplanar with plane
         std::vector<Triangle> tris;
         isize_t brush_id; // the id of the brush the first triangle in tris came
-                          // from. can be any number so long as it is unique for
-                          // every brush.
+                          // from. a brush id can be number so long as it is
+                          // unique for every brush.
     };
 
+    // defines the bounds of the node
     AABB b_box;
     ConvexShape shape = ConvexShape::box(Vec3(1.f, 1.f, 1.f));
 
@@ -105,7 +107,7 @@ class BSP {
         BSP *parent);
 
 public:
-    // these nodes contain the child tris behind and in front of this
+    // these nodes contain the child tris behind and in front of this node
     std::unique_ptr<BSP> behind = nullptr;
     std::unique_ptr<BSP> in_front = nullptr;
     BSP *parent = nullptr;
