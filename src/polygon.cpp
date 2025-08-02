@@ -234,33 +234,33 @@ std::vector<Plane> Polygon::side_planes() const
     return planes;
 }
 
-bool Polygon::partially_contains(const Polygon &other) const
+bool Polygon::partially_contains(const Polygon &other, float epsilon) const
 {
-    if (!this->is_on(other.get_plane()))
+    if (!this->is_on(other.get_plane(), epsilon))
         return false;
 
     // seperating axis theorem
 
     for (const auto &plane : this->side_planes()) {
-        if (other.is_in_front_of(plane))
+        if (other.is_in_front(plane))
             return false;
     }
 
     for (const auto &plane : other.side_planes()) {
-        if (this->is_in_front_of(plane))
+        if (this->is_in_front(plane))
             return false;
     }
 
     return true;
 }
 
-bool Polygon::partially_contains(const Triangle &tri) const
+bool Polygon::partially_contains(const Triangle &tri, float epsilon) const
 {
     return this->partially_contains(
-        Polygon(std::array{tri.vs[0], tri.vs[1], tri.vs[2]}));
+        Polygon(std::array{tri.vs[0], tri.vs[1], tri.vs[2]}), epsilon);
 }
 
-bool Polygon::is_in_front_of(const Plane &plane) const
+bool Polygon::is_in_front(const Plane &plane) const
 {
     for (const auto &v : this->vs) {
         if (!plane.is_point_in_front(v))
@@ -283,6 +283,17 @@ bool Polygon::is_behind(const Plane &plane) const
 void Polygon::flip_dir()
 {
     std::reverse(this->vs.begin(), this->vs.end());
+}
+
+std::ostream &operator<<(std::ostream &os, const Polygon &poly)
+{
+    for (auto v = poly.vs.begin(); v < poly.vs.end(); ++v) {
+        if (v > poly.vs.begin())
+            os << ", ";
+        os << "(" << *v << ")";
+    }
+
+    return os;
 }
 
 // ========================================================
@@ -327,6 +338,10 @@ RenderPolygon::RenderPolygon(std::span<const TexVert> vs, size_t tex_idx,
 {
     this->sort_vs_ccw(normal);
 }
+
+RenderPolygon::RenderPolygon(const Triangle &tri)
+    : RenderPolygon(tri.vs, tri.vts, tri.tex_idx)
+{}
 
 Vec3 RenderPolygon::get_center() const
 {
@@ -509,12 +524,75 @@ bool RenderPolygon::intersects(const Plane &plane) const
     return false;
 }
 
-std::ostream &operator<<(std::ostream &os, const Polygon &poly)
+bool RenderPolygon::partially_contains(const Polygon &other,
+                                       float epsilon) const
+{
+    if (!this->is_on(other.get_plane(), epsilon))
+        return false;
+
+    // seperating axis theorem
+
+    for (const auto &plane : this->side_planes()) {
+        if (other.is_in_front(plane))
+            return false;
+    }
+
+    for (const auto &plane : other.side_planes()) {
+        if (this->is_in_front(plane))
+            return false;
+    }
+
+    return true;
+}
+
+bool RenderPolygon::partially_contains(const Triangle &tri, float epsilon) const
+{
+    return this->partially_contains(
+        Polygon(std::array{tri.vs[0], tri.vs[1], tri.vs[2]}), epsilon);
+}
+
+bool RenderPolygon::is_in_front(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_in_front(v.v))
+            return false;
+    }
+
+    return true;
+}
+
+bool RenderPolygon::is_behind(const Plane &plane) const
+{
+    for (const auto &v : this->vs) {
+        if (!plane.is_point_behind(v.v))
+            return false;
+    }
+
+    return true;
+}
+
+std::vector<Plane> RenderPolygon::side_planes() const
+{
+    std::vector<Plane> planes;
+
+    for (auto p = this->vs.begin(); p < this->vs.end(); ++p) {
+        // p and next form a line
+        auto next = p == this->vs.end() - 1 ? this->vs.begin() : p + 1;
+
+        Vec3 center = p->v.mix(next->v, 0.5f);
+        Vec3 normal = (center - this->get_center()).normalize();
+        planes.emplace_back(normal, p->v);
+    }
+
+    return planes;
+}
+
+std::ostream &operator<<(std::ostream &os, const RenderPolygon &poly)
 {
     for (auto v = poly.vs.begin(); v < poly.vs.end(); ++v) {
         if (v > poly.vs.begin())
             os << ", ";
-        os << "(" << *v << ")";
+        os << "((" << v->v << "), (" << v->vt << "))";
     }
 
     return os;

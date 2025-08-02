@@ -445,6 +445,7 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 
     if (!is_solid) {
         for (auto tri : tris) {
+            /*
             bool add = false;
             for (const auto &poly : this->shape.polys) {
                 auto plane = poly.get_plane();
@@ -456,19 +457,45 @@ void BSP::init_leaf_node(const std::vector<Triangle *> &tris)
 
             if (add)
                 this->leaf_info().edge_tris.push_back(tri);
+                */
+
+            bool add = true;
+            for (const auto &poly : this->shape.polys) {
+                auto plane = poly.get_plane();
+                if (!tri->is_on(plane, 0.1f) && tri->is_in_front(plane)) {
+                    add = false;
+                    break;
+                }
+            }
+
+            if (add)
+                this->leaf_info().edge_tris.push_back(tri);
         }
     }
 
     this->create_portals();
 }
 
-// IF PERFORMANCE BECOMES AN ISSUE, CHECK IF COMPILER CONVERTS THE TRIS VECTOR
-// TO A REFERENCE!
+// NOTE: if performance becomes an issue, check if compiler converts the tris
+//       vec to a reference of some kind.
 void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
                             std::vector<Triangle *> tris, BSPTree &parent)
 {
     this->b_box = cur_hull.get_aabb();
     this->shape = cur_hull;
+
+    /*
+    std::erase_if(tris, [this](const auto &tri) {
+        bool erase = false;
+        for (const auto &poly : this->shape.polys) {
+            if (poly.partially_contains(*tri, 1.f)) {
+                erase = true;
+                break;
+            }
+        }
+        return erase;
+    });
+    */
 
     if (this->is_leaf() && !this->has_innode_info()) {
         this->init_leaf_node(tris);
@@ -478,11 +505,12 @@ void BSP::create_leaf_nodes(const ConvexShape &cur_hull,
             bool is_behind = this->parent->behind.get() == this;
             std::erase_if(tris, [this, is_behind](const auto &tri) {
                 bool is_on = tri->is_on(this->innode_info().plane, 1.f);
+                if (is_on)
+                    return false;
                 if (is_behind)
-                    return tri->is_in_front(this->innode_info().plane) &&
-                           !is_on;
+                    return tri->is_in_front(this->innode_info().plane);
                 else
-                    return tri->is_behind(this->innode_info().plane) && !is_on;
+                    return tri->is_behind(this->innode_info().plane);
             });
         }
         */
@@ -577,7 +605,7 @@ void BSP::new_frame()
 void BSP::create_portals()
 {
     assert(this->is_leaf());
-    // solid nodes don't have leaves
+    // solid nodes don't have portals
     if (this->leaf_info().edge_tris.empty())
         return;
 
@@ -740,50 +768,6 @@ BSP &BSPTree::get_root()
     return const_cast<BSP &>(std::as_const(*this).get_root());
 }
 
-std::vector<BSP *> BSPTree::get_leaf_neighbors(const BSP &leaf)
-{
-    std::vector<BSP *> neighbors;
-
-    /*
-    BSP *cur_node = leaf.parent;
-    const BSP *prev_node = &leaf;
-    isize_t n_neighbors = leaf.shape.polys.size();
-    for (isize_t i = 0; i < n_neighbors; ++i) {
-        bool from_behind = prev_node == cur_node->behind.get();
-        BSP *neighbor =
-            from_behind ? cur_node->in_front.get() : cur_node->behind.get();
-        if (!neighbor->is_leaf())
-            break;
-        // if this assert goes off, try picking the child leaf closest to leaf
-        // assert(neighbor->is_leaf());
-        neighbors.push_back(neighbor);
-
-        prev_node = cur_node;
-        cur_node = cur_node->parent;
-    }
-    */
-
-    // this can probably be optimized
-    for (const auto &poly : leaf.shape.polys) {
-        auto plane = poly.get_plane();
-
-        Vec3 p = poly.get_center() + plane.normal * 0.1f;
-        if (!this->root->b_box.contains(p))
-            continue;
-
-        auto &node = this->root->get_point_node(p, Matrix4x4::identity());
-
-        assert(node.shape.contains(p));
-
-        assert(node.is_leaf());
-        if (std::find(neighbors.begin(), neighbors.end(), &node) ==
-            neighbors.end())
-            neighbors.push_back(&node);
-    }
-
-    return neighbors;
-}
-
 #if 0
 void BSPTree::create_leaf_portals(BSP &leaf, std::span<BSP *> neighbors)
 {
@@ -875,21 +859,18 @@ void BSPTree::remove_useless_portals()
     }
 }
 
-// for some reason i have to make this a seperate pass or else everything blows
-// up
+// yes, this is necessary. do not remove this.
 void BSPTree::resize_portals()
 {
     // eh, probably works
     for (auto &leaf : this->leaves) {
         for (auto &portal : leaf->leaf_info().portals) {
             for (const auto &poly : portal.in_front->shape.polys) {
-                std::cout << "in front area = " << poly.get_area() << "\n";
                 auto p = poly.get_plane();
                 p.d += 1.f;
                 portal.shape.clip(p.flipped());
             }
             for (const auto &poly : portal.behind->shape.polys) {
-                std::cout << "behind area = " << poly.get_area() << "\n";
                 auto p = poly.get_plane();
                 p.d += 1.f;
                 portal.shape.clip(p.flipped());
@@ -900,7 +881,10 @@ void BSPTree::resize_portals()
 
 #if 1
 
-void BSPTree::calc_pvs() {}
+void BSPTree::calc_pvs()
+{
+    std::cout << "WARNING: CALLING BSPTree::calc_pvs!\n";
+}
 
 void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
                      std::span<const Texture> texs)
@@ -921,6 +905,7 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
     visited.push_back(nodes.top());
 
     isize_t key = 0;
+    isize_t n = 0;
     while (!nodes.empty()) {
         if (std::ssize(nodes) > max_node_render_depth) {
             nodes.pop();
@@ -959,9 +944,11 @@ void BSPTree::render(const MapEntity &parent, Frame &frame, const Camera &cam,
         }
 
         ++key;
+        ++n;
     }
 
-    std::cout << "rendered " << key << "/" << this->leaves.size() << " nodes\n";
+    std::cout << "rendered " << n << "/" << this->leaves.size() - 1
+              << " nodes\n";
 }
 
 #else

@@ -39,9 +39,11 @@ public:
     bool invalid() const; // number of vertices is less than 3
     bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
     float get_area() const;
-    bool partially_contains(const Polygon &other) const;
-    bool partially_contains(const Triangle &other) const;
-    bool is_in_front_of(const Plane &plane) const;
+    bool partially_contains(const Polygon &other,
+                            float epsilon = Consts::epsilon) const;
+    bool partially_contains(const Triangle &other,
+                            float epsilon = Consts::epsilon) const;
+    bool is_in_front(const Plane &plane) const;
     bool is_behind(const Plane &plane) const;
     void flip_dir();
     // each plane points outwards from the center of the polygon
@@ -68,6 +70,7 @@ public:
                   size_t tex_idx, const Vec3 &normal);
     RenderPolygon(std::span<const TexVert> vs, size_t tex_idx,
                   const Vec3 &normal);
+    explicit RenderPolygon(const Triangle &tri);
 
     Vec3 get_center() const;
     Plane get_plane() const;
@@ -82,6 +85,15 @@ public:
     bool invalid() const; // number of vertices is less than 3
     float get_area() const;
     bool intersects(const Plane &plane) const;
+    bool partially_contains(const Polygon &other,
+                            float epsilon = Consts::epsilon) const;
+    bool partially_contains(const Triangle &other,
+                            float epsilon = Consts::epsilon) const;
+    bool is_on(const Plane &plane, float epsilon = Consts::epsilon) const;
+    bool is_in_front(const Plane &plane) const;
+    bool is_behind(const Plane &plane) const;
+    // each plane points outwards from the center of the polygon
+    std::vector<Plane> side_planes() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const Polygon &poly);

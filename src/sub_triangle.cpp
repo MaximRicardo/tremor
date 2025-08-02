@@ -197,8 +197,8 @@ void SubTriangle::render(Frame &frame, std::span<const Texture> texs) const
             frame.scans[y].add_edge(Edge(this, clpd_min, true));
             frame.scans[y].add_edge(Edge(this, clpd_max, false));
         } else {
-            RenderPixels::render_horizontal_line(y, clpd_min, clpd_max - 1,
-                                                 frame, *this, texs);
+            RenderPixels::render_horizontal_line(y, clpd_min, clpd_max, frame,
+                                                 *this, texs);
         }
     }
 }

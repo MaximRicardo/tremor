@@ -28,7 +28,7 @@ std::vector<Plane> get_seperators(const Polygon &start, const Polygon &pass)
             // pass should be in front of p. if not, this plane isn't a proper
             // seperator and can be discarded.
             bool this_behind = start.is_behind(p) || start.is_on(p);
-            bool pass_in_front = pass.is_in_front_of(p) || pass.is_on(p);
+            bool pass_in_front = pass.is_in_front(p) || pass.is_on(p);
             if (!this_behind || !pass_in_front)
                 continue;
 

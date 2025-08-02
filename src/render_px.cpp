@@ -20,7 +20,7 @@ namespace {
 
 // this will make entities render over each other in wonky ways.
 constexpr bool ignore_depth_buffer = false;
-constexpr float depth_epsilon = 1.f;
+constexpr float depth_epsilon = 0.01f;
 
 // (u, v, w) are mapped to x, y, z
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
