@@ -3,7 +3,12 @@
 Tremor is a 3D-Engine I've written which uses a custom Quake-Style software
 renderer.
 
-Logo: ![Alt](./thumbnail.png "Demo of the WIP Renderer on Quake's E1M1")
+<figure>
+  <img
+  src="./thumbnail.png"
+  alt="Demo of the WIP Renderer on Quake's E1M1">
+  <figcaption>MDN Logo</figcaption>
+</figure>
 
 The code is designed to be easy to port to any platform and be pretty much
 dependency free.
