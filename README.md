@@ -25,8 +25,8 @@ CMake for building the project.
 
 ## Using a Custom Rendering and Input Backend
 
-Swapping out Raylib for any other graphics library as a backend only requires 2
-things:
+Swapping out Raylib for any other graphics and input library as a backend only
+requires two things:
 *   An implementation of the Screen class in src/screen/screen.hpp.
 *   An implementation of the functions in the Input namespace in
     src/input/input.hpp
